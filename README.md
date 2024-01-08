@@ -1,10 +1,22 @@
 <div align="center">
-  
-# WinHotCorner
+
+<table>
+<tbody>
+  <tr>
+    <td><img src="res/WHC_Logo.svg" alt="Logo" width="128px"/> </td>
+    <td>
+    
+  # WinHotCorner
+  </td>
+  </tr>
+</tbody>
+</table>
+
 Classic GNOME hot corner function for Windows!
 
 ![CSharp](https://img.shields.io/badge/C%23-5C2D91?style=flat-square&logo=.net&logoColor=white)
 ![Windows 11](https://img.shields.io/badge/Designed%20for%20Windows%2011-%230079d5.svg?style=flat-square&logo=Windows%2011&logoColor=white)
+![Inkscape](https://img.shields.io/badge/Inkscape-e0e0e0?style=flat-square&logo=inkscape&logoColor=080A13)
 </div>
 
 ## Introduction
