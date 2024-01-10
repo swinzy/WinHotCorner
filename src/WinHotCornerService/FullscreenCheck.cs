@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace WinHotCornerService
+namespace WinHotCorner
 {
     /*
      * The following code is based on this blog:
