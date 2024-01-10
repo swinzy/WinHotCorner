@@ -22,6 +22,22 @@ Classic GNOME hot corner function for Windows!
 ## Introduction
 The aim of this repository is to replicate the classic GNOME hot corner bahaviour on Windows as close as possible.
 
+<div align="center">
+  <table>
+    <tbody>
+      <tr>
+        <td><img src="res/serviceworker_scrshot.png" alt="Service worker screenshot" height="100%"/></td>
+        <td><img src="res/controlpanel_scrshot.png" alt="Control panel screenshot" height="100%"/></td>
+      </tr>  
+            <tr>
+        <th>Service Worker</th>
+        <th>Control Panel</th>  
+      </tr>
+    </tbody>
+  </table>
+  
+</div>
+
 The GNOME hot corner has one function, that is when user's mouse cursor hits the top left corner of the display, it will show the "Activity" page, which allows user to quickly navigate through opened apps without needing to touch your keyboard.
 
 Hence this app will allow user to have the same experience as on GNOME.
