@@ -3,6 +3,12 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
 
+# For testing purpose
+TestApp/
+
+# Haven't finish developing
+WinHotCorner Control Panel/
+
 # User-specific files
 *.rsuser
 *.suo
