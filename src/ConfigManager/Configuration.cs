@@ -2,6 +2,9 @@
 
 namespace WinHotCorner
 {
+    /// <summary>
+    /// A model for (de)serialising configuration
+    /// </summary>
     [XmlRoot(ElementName = "WinHotCornerConfig")]
     public class Configuration
     {
@@ -9,6 +12,10 @@ namespace WinHotCorner
         public bool DisableWhenFullscreen { get; set; } = true;
         public bool DisableWhenMouseDown { get; set; } = true;
 
+        /// <summary>
+        /// Output the properties for easy debugging
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             return $"Force: {Force}\nDisableWhenFullscreen: {DisableWhenFullscreen}\nDisableWhenMouseDown: {DisableWhenMouseDown}\n";

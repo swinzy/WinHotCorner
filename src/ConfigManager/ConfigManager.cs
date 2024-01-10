@@ -4,9 +4,18 @@ using System.Xml.Serialization;
 
 namespace WinHotCorner
 {
+    /// <summary>
+    /// A class for saving/loading configurations from file
+    /// </summary>
     public static class ConfigManager
     {
+        /// <summary>
+        /// The directory where configuration is stored, typically is "C:\Users\[USER]\Appdata\Local\WinHotCorner"
+        /// </summary>
         public static readonly string CONF_PATH = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "WinHotCorner");
+        /// <summary>
+        /// The configuration file, typically is "C:\Users\[USER]\Appdata\Local\WinHotCorner\config.xml"
+        /// </summary>
         public static readonly string CONF_FILE = Path.Combine(CONF_PATH, "config.xml");
         static ConfigManager() 
         {
@@ -14,7 +23,10 @@ namespace WinHotCorner
             Directory.CreateDirectory(CONF_PATH);
         }
 
-
+        /// <summary>
+        /// Saves the given configuration to file
+        /// </summary>
+        /// <param name="cfg"></param>
         public static void Save(Configuration cfg)
         {
             XmlSerializer xs = new XmlSerializer(typeof(Configuration));
@@ -24,6 +36,10 @@ namespace WinHotCorner
             }
         }
 
+        /// <summary>
+        /// Loads the configuration from file
+        /// </summary>
+        /// <returns>The configuration (found), default configuration (not found) or null (error)</returns>
         public static Configuration Load()
         {
             try
@@ -35,6 +51,7 @@ namespace WinHotCorner
                     return new Configuration();
                 }
 
+                // Otherwise deserialise from XML
                 XmlSerializer xs = new XmlSerializer(typeof(Configuration));
                 using (TextReader reader = new StreamReader(CONF_FILE))
                 {
@@ -43,6 +60,8 @@ namespace WinHotCorner
             }
             catch (Exception ex)
             {
+                // In case anything went wrong, output log and return null
+                // This is for giving the client a chance to retry
                 Console.WriteLine(ex.Message);
                 return null;
             }
