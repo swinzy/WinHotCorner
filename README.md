@@ -19,10 +19,12 @@ Classic GNOME hot corner function for Windows!
 ![Inkscape](https://img.shields.io/badge/Inkscape-e0e0e0?style=flat-square&logo=inkscape&logoColor=080A13)
 </div>
 
+<div align="center">
+  
 ## Introduction
 The aim of this repository is to replicate the classic GNOME hot corner bahaviour on Windows as close as possible.
 
-<div align="center">
+
   <table>
     <tbody>
       <tr>
@@ -42,7 +44,11 @@ The GNOME hot corner has one function, that is when user's mouse cursor hits the
 
 Hence this app will allow user to have the same experience as on GNOME.
 
+<div align="center">
+  
 ## Philosophy
+</div>
+
 The principles of design of this app are:
 <div align="center">
   
@@ -54,7 +60,11 @@ The app should be small in size, consumes little resources.
 The app should have elegant design, and blend into your system, as if it was a Windows feature.
 </div>
 
+<div align="center">
+  
 ## Functionalities
+</div>
+
 - [X] **Trigger hot corner**
 - [X] **Require force**: hot corner will not trigger simply when cursor is **at** the top-left corner, but when user **hits** the top-left corner, similar to GNOME default behaviour.
 - [X] **Singleton**: service worker will not create multiple instances even when user accidentally runs mutiple times.
@@ -66,10 +76,18 @@ The app should have elegant design, and blend into your system, as if it was a W
 - [ ] **Control panel configurable**: service worker can be configured via the WinHotCorner control panel.
 - [ ] **Control panel controllable**: service worker can be killed/started via the WinHotCorner control panel.
 
+<div align="center">
+  
 ## Configuration
+</div>
+
 See [Configuration](https://github.com/m1nicrusher/WinHotCorner/wiki/Configuration) section of the wiki.
 
+<div align="center">
+  
 ## Components
+</div>
+
 ### Service Worker
 The WinHotCorner Service Worker is the main component of this app. It does not have a graphical user interface (GUI), and will run (and stay forever) in the background as soon as user executes it.
 
@@ -82,15 +100,28 @@ The WinHotCorner Control Panel is a totally optional and separate application. U
 It simply provides an elegant entry of tweaking the behaviour of the service worker.
 
 Removing this component will not affect the functionality of the service worker.
+
+<div align="center">
+  
 ## Mechanism
+</div>
+
 The application utilises a global mouse hook[^1] to detect cursor postion. And when it detects that the mouse is hitting the top-left corner, the app will then simulate[^2] <kbd>Win</kbd> + <kbd>Tab</kbd> hotkey to trigger the "Task Switch" interface.
 
+<div align="center">
+  
 ## Troubleshooting
+</div>
+
 #### Hot corner does not trigger when some applications are running (i.e. Task Manager, Task Scheduler, Registry Editor)
 **Solution**: Run the service worker as administrator.
 
 **Reason**: Because of a security constraint of Windows, any application running as user will not be able to hook global mouse/keyboard onto any application running as administrator, hence the app cannot detect hot corner when admin app is running.
 
+<div align="center">
+  
 ## References
+</div>
+
 [^1]: [Global Mouse Hook](https://github.com/gmamaladze/globalmousekeyhook)
 [^2]: [Input Simulator](https://github.com/michaelnoonan/inputsimulator)
