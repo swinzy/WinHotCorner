@@ -44,11 +44,14 @@ The app should have elegant design, and blend into your system, as if it was a W
 - [X] **Singleton**: service worker will not create multiple instances even when user accidentally runs mutiple times.
 - [X] **Disable when fullscreen**: hot corner will not trigger if foreground application is in fullscreen mode.
 - [ ] **Multi-display awareness**: user can choose whether hotcorner triggers on primary display only or all displays.
-- [ ] **Disable when mouse down**: prevents accidental trigger while dragging/using gestures.
-- [ ] **Registry configurable**: service worker reads configurations from Registry.
+- [X] **Disable when mouse down**: prevents accidental trigger while dragging/using gestures.
+- [X] **Configurable**: service worker reads configurations from config file.
 - [ ] **Automatically configure run on startup**
 - [ ] **Control panel configurable**: service worker can be configured via the WinHotCorner control panel.
 - [ ] **Control panel controllable**: service worker can be killed/started via the WinHotCorner control panel.
+
+## Configuration
+See Wiki for configuration methods.
 
 ## Components
 ### Service Worker
