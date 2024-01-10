@@ -51,7 +51,7 @@ The app should have elegant design, and blend into your system, as if it was a W
 - [ ] **Control panel controllable**: service worker can be killed/started via the WinHotCorner control panel.
 
 ## Configuration
-See Wiki for configuration methods.
+See [Configuration](https://github.com/m1nicrusher/WinHotCorner/wiki/Configuration) section of the wiki.
 
 ## Components
 ### Service Worker
