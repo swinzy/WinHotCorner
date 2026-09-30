@@ -26,7 +26,7 @@ namespace WinHotCorner
             m_GlobalHook.MouseMove += HotCornerService_MouseMove;
             m_GlobalHook.MouseDown += (object sender, System.Windows.Forms.MouseEventArgs e) => _mouseDown = true;
             m_GlobalHook.MouseUp += (object sender, System.Windows.Forms.MouseEventArgs e) => _mouseDown = false;
-            Console.WriteLine("Started");
+            Log.Info("Started");
         }
 
         public void Stop()
@@ -42,7 +42,7 @@ namespace WinHotCorner
         /// </summary>
         public async void ReloadConfigAsync()
         {
-            Console.WriteLine("Reloading configuration...");
+            Log.Info("Reloading configuration...");
 
             // Immediately set flag to false to prevent multiple reloading process at the same time
             ShouldReloadConfig = false;
@@ -53,7 +53,7 @@ namespace WinHotCorner
             {
                 if (newCfg is null)
                 {
-                    Console.WriteLine($"Failed to load configuration, retrying in 1 second ({i+1}/{CFG_RETRY}).");
+                    Log.Info($"Failed to load configuration, retrying in 1 second ({i+1}/{CFG_RETRY}).");
                     await Task.Delay(1000).ContinueWith(_ => newCfg = ConfigManager.Load());
                 }
                 else
@@ -65,16 +65,16 @@ namespace WinHotCorner
             // Failure after a series of retrials
             if (newCfg is null)
             {
-                Console.WriteLine("Cannot load configuration, aborted.");
+                Log.Error("Cannot load configuration, aborted.");
                 // Reset flag for retrying next time
                 ShouldReloadConfig = true;
                 return;
             }
 
             // Success
-            Console.WriteLine("Configuration loaded.");
+            Log.Info("Configuration loaded.");
             Configuration = newCfg;
-            Console.WriteLine(Configuration);
+            Log.Info(Configuration.ToString());
         }
 
         /// <summary>
@@ -116,14 +116,14 @@ namespace WinHotCorner
             // Check fullscreen
             if (Configuration.DisableWhenFullscreen && !FullscreenCheck.ShouldTrigger())
             {
-                Console.WriteLine("Not triggered: App running in fullscreen");
+                Log.Info("Not triggered: App running in fullscreen");
                 return;
             }
 
             // Check guesture
             if (Configuration.DisableWhenMouseDown && _mouseDown)
             {
-                Console.WriteLine("Not triggered: Mouse down");
+                Log.Info("Not triggered: Mouse down");
                 return;
             }
 

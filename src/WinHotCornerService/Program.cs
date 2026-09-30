@@ -26,6 +26,10 @@ namespace WinHotCorner
         [STAThread]
         static void Main(string[] args)
         {   
+            // Nothing is shown to the user, so at least leave a trace of crashes
+            AppDomain.CurrentDomain.UnhandledException += (sender, e) => Log.Error($"Unhandled exception: {e.ExceptionObject}");
+            Application.ThreadException += (sender, e) => Log.Error($"Unhandled exception: {e.Exception}");
+
             // Check singleton
             if (mutex.WaitOne(TimeSpan.Zero, true))
             {
@@ -66,13 +70,13 @@ namespace WinHotCorner
 
         private static void OnError(object sender, ErrorEventArgs e)
         {
-            Console.WriteLine(e.GetException().Message);
+            Log.Error($"Configuration watcher error: {e.GetException().Message}");
         }
         private static void OnChanged(object sender, FileSystemEventArgs e)
         {
             // If config file changed, notify the service (do not load config immediately to improve performance)
             service.ShouldReloadConfig = true;
-            Console.WriteLine("Configuration changed, marked as should reload.");
+            Log.Info("Configuration changed, marked as should reload.");
         }
     }
 }
