@@ -1,7 +1,6 @@
 ﻿using Gma.System.MouseKeyHook;
 using System;
 using System.Threading.Tasks;
-using WindowsInput.Native;
 
 namespace WinHotCorner
 {
@@ -127,9 +126,14 @@ namespace WinHotCorner
                 return;
             }
 
-            // TODO: Dirty method, waiting for a better solution (probably an Windows API call?)
-            WindowsInput.InputSimulator simulator = new WindowsInput.InputSimulator();
-            simulator.Keyboard.ModifiedKeyStroke(VirtualKeyCode.LWIN, VirtualKeyCode.TAB);
+            // Don't mix our Win+Tab into a shortcut the user is pressing
+            if (TaskView.IsModifierDown())
+            {
+                Log.Info("Not triggered: Modifier key held");
+                return;
+            }
+
+            TaskView.Open();
         }
     }
 }
