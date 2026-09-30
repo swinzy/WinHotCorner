@@ -8,7 +8,7 @@
     <OutputType Condition=" '$(Configuration)' == 'Debug' ">Exe</OutputType>
     <UseWindowsForms>true</UseWindowsForms>
     <RootNamespace>WinHotCorner</RootNamespace>
-    <AssemblyName>WinHotCornerService</AssemblyName>
+    <AssemblyName>WinHotCorner</AssemblyName>
     <ApplicationIcon>WHC.ico</ApplicationIcon>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>

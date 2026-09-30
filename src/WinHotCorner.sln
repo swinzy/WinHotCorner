@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.7.34024.191
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WinHotCornerService", "WinHotCornerService\WinHotCornerService.csproj", "{16BA4AE2-691E-495C-AFFC-532A994857ED}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WinHotCorner", "WinHotCorner\WinHotCorner.csproj", "{16BA4AE2-691E-495C-AFFC-532A994857ED}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConfigManager", "ConfigManager\ConfigManager.csproj", "{DE05688D-75A2-4B2D-9621-F933054F118A}"
 EndProject

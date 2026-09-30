@@ -5,8 +5,8 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("WinHotCorner Service")]
-[assembly: AssemblyDescription("Background service of WinHotCorner")]
+[assembly: AssemblyTitle("Hot Corner for Windows")]
+[assembly: AssemblyDescription("Opens Task View when the pointer hits the top-left corner")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Stephen Zhang")]
 [assembly: AssemblyProduct("WinHotCorner")]
