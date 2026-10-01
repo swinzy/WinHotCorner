@@ -12,9 +12,14 @@ namespace WinHotCorner
     internal static class Log
     {
         /// <summary>
+        /// The log folder, typically is "C:\Users\[USER]\Appdata\Local\WinHotCorner"
+        /// </summary>
+        public static readonly string LOG_DIR = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "WinHotCorner");
+
+        /// <summary>
         /// The error log, typically is "C:\Users\[USER]\Appdata\Local\WinHotCorner\WinHotCorner.log"
         /// </summary>
-        public static readonly string LOG_FILE = Path.Combine(ConfigManager.CONF_PATH, "WinHotCorner.log");
+        public static readonly string LOG_FILE = Path.Combine(LOG_DIR, "WinHotCorner.log");
 
         /// <summary>
         /// The log file is moved to "*.old" once it grows beyond this size
@@ -46,6 +51,7 @@ namespace WinHotCorner
             {
                 lock (fileLock)
                 {
+                    Directory.CreateDirectory(LOG_DIR);
                     var info = new FileInfo(LOG_FILE);
                     if (info.Exists && info.Length > MAX_LOG_SIZE)
                     {

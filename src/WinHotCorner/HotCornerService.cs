@@ -1,8 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
+using System.Security.AccessControl;
+using System.Security.Principal;
+using System.Threading;
 using System.Windows.Forms;
+using Microsoft.Win32;
+using Timer = System.Windows.Forms.Timer;
 
 namespace WinHotCorner
 {
@@ -15,12 +19,7 @@ namespace WinHotCorner
         private static extern bool PostMessage(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
 
         /// <summary>
-        /// Defines how many times it should retry upon failure to load configuration
-        /// </summary>
-        private const int CFG_RETRY = 3;
-
-        /// <summary>
-        /// How often the watchdog checks the mouse hook, the monitor layout and the configuration, in milliseconds
+        /// How often the watchdog checks the mouse hook and the monitor layout, in milliseconds
         /// </summary>
         private const int WATCHDOG_INTERVAL = 2000;
 
@@ -40,8 +39,15 @@ namespace WinHotCorner
         /// Posted by the mouse hook to trigger outside of the hook, wParam is the corner's monitor
         /// </summary>
         private const int WM_TRIGGER = 0x8000 + 1;
+        /// <summary>
+        /// Posted when the configuration in the registry changed
+        /// </summary>
+        private const int WM_CONFIG_CHANGED = 0x8000 + 2;
+        /// <summary>
+        /// Posted when someone (the control panel) set the exit event
+        /// </summary>
+        private const int WM_EXIT = 0x8000 + 3;
 
-        public bool ShouldReloadConfig { get; set; } = false;
         private Configuration Configuration { get; set; } = new Configuration();
 
         private readonly MouseHook _hook = new MouseHook();
@@ -57,6 +63,11 @@ namespace WinHotCorner
         private long _lastEventCount = 0;
         private POINT _lastCursorPos;
 
+        private RegistryWatcher _userWatcher;
+        private RegistryWatcher _policyWatcher;
+        private EventWaitHandle _exitEvent;
+        private RegisteredWaitHandle _exitWait;
+
         public HotCornerService()
         {
             _hook.MouseEvent += OnMouseEvent;
@@ -66,59 +77,91 @@ namespace WinHotCorner
         /// <summary>
         /// Starts detecting. Must be called on the thread that runs the message loop.
         /// </summary>
-        public void Start()
+        /// <returns>false if the hot corner is turned off in the configuration</returns>
+        public bool Start()
         {
             _window = new MessageWindow(this);
+
+            // Watch before loading, so a change made in between is not missed
+            WatchConfiguration();
+            LoadConfiguration();
+            if (!Configuration.Enabled)
+            {
+                Log.Info("Turned off in the configuration, exiting.");
+                return false;
+            }
+
+            ListenForExit();
             UpdateBarriers();
             _hook.Install();
             GetCursorPos(out _lastCursorPos);
             _watchdog.Start();
             Log.Info("Started");
+            return true;
         }
 
         public void Stop()
         {
             _watchdog.Stop();
             _hook.Dispose();
+            _exitWait?.Unregister(null);
+            _exitEvent?.Dispose();
+            _userWatcher?.Dispose();
+            _policyWatcher?.Dispose();
             _window?.DestroyHandle();
         }
 
-        /// <summary>
-        /// Reloads configuration from file (contains retry mechanism)
-        /// </summary>
-        public async void ReloadConfigAsync()
+        private void LoadConfiguration()
         {
-            Log.Info("Reloading configuration...");
+            var problems = new List<string>();
+            Configuration = ConfigManager.Load(problems);
+            foreach (string problem in problems)
+                Log.Error(problem);
+            Log.Info($"Configuration: {Configuration}");
+        }
 
-            // Immediately set flag to false to prevent multiple reloading process at the same time
-            ShouldReloadConfig = false;
+        private void WatchConfiguration()
+        {
+            // The user's key is created if it is missing, so that it can be watched.
+            // The policy key may not exist, so watch its parent, which always does
+            _userWatcher = new RegistryWatcher(Registry.CurrentUser.CreateSubKey(ConfigManager.KEY_PATH), false);
+            _policyWatcher = new RegistryWatcher(Registry.LocalMachine.OpenSubKey(@"Software\Policies"), true);
 
-            // Start trying to load config and retry upon failure
-            var newCfg = ConfigManager.Load();
-            for (int i = 0; i < CFG_RETRY; i++)
+            foreach (RegistryWatcher watcher in new[] { _userWatcher, _policyWatcher })
             {
-                if (newCfg is null)
-                {
-                    Log.Info($"Failed to load configuration, retrying in 1 second ({i+1}/{CFG_RETRY}).");
-                    await Task.Delay(1000).ContinueWith(_ => newCfg = ConfigManager.Load());
-                }
-                else
-                {
-                    break;
-                }
+                watcher.Changed += () => PostMessage(_window.Handle, WM_CONFIG_CHANGED, IntPtr.Zero, IntPtr.Zero);
+                watcher.Arm();
             }
+        }
 
-            // Failure after a series of retrials: keep the current configuration until the file changes again
-            if (newCfg is null)
+        private void OnConfigurationChanged()
+        {
+            LoadConfiguration();
+            if (!Configuration.Enabled)
             {
-                Log.Error("Cannot load configuration, aborted.");
-                return;
+                Log.Info("Turned off in the configuration, exiting.");
+                Application.ExitThread();
             }
+        }
 
-            // Success
-            Log.Info("Configuration loaded.");
-            Configuration = newCfg;
-            Log.Info(Configuration.ToString());
+        /// <summary>
+        /// Creates the event that asks this process to exit (see <see cref="HotCornerControl.RequestExit"/>)
+        /// </summary>
+        private void ListenForExit()
+        {
+            // The hot corner usually runs elevated, and then by default only elevated processes could open the event.
+            // Let the user's own unelevated processes, such as the control panel, set it
+            var security = new EventWaitHandleSecurity();
+            security.AddAccessRule(new EventWaitHandleAccessRule(WindowsIdentity.GetCurrent().User,
+                EventWaitHandleRights.Synchronize | EventWaitHandleRights.Modify, AccessControlType.Allow));
+            security.AddAccessRule(new EventWaitHandleAccessRule(new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null),
+                EventWaitHandleRights.FullControl, AccessControlType.Allow));
+            security.AddAccessRule(new EventWaitHandleAccessRule(new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null),
+                EventWaitHandleRights.FullControl, AccessControlType.Allow));
+
+            _exitEvent = new EventWaitHandle(false, EventResetMode.ManualReset, HotCornerControl.EXIT_EVENT_NAME, out bool createdNew, security);
+            _exitWait = ThreadPool.RegisterWaitForSingleObject(_exitEvent,
+                (state, timedOut) => PostMessage(_window.Handle, WM_EXIT, IntPtr.Zero, IntPtr.Zero), null, Timeout.Infinite, true);
         }
 
         /// <summary>
@@ -160,7 +203,7 @@ namespace WinHotCorner
             // Inside the hook the pointer has not moved yet, so this is where it is coming from
             GetCursorPos(out POINT prev);
 
-            double threshold = Configuration.Force;
+            double threshold = Configuration.PressureThreshold;
             for (int i = 0; i < _barriers.Count; i++)
             {
                 // Trigger later from the message loop, so the hook returns right away
@@ -214,7 +257,7 @@ namespace WinHotCorner
 
         /// <summary>
         /// Windows removes a mouse hook without notice when it is too slow once, so check that it still works.
-        /// Also catches monitor changes that sent no message, and applies a changed configuration.
+        /// Also catches monitor changes that sent no message.
         /// </summary>
         private void Watchdog()
         {
@@ -230,13 +273,10 @@ namespace WinHotCorner
             _lastCursorPos = pos;
 
             UpdateBarriers();
-
-            if (ShouldReloadConfig)
-                ReloadConfigAsync();
         }
 
         /// <summary>
-        /// Hidden top-level window: receives monitor change broadcasts and runs triggers posted by the hook
+        /// Hidden top-level window: receives monitor change broadcasts and runs what other threads post to it
         /// </summary>
         private class MessageWindow : NativeWindow
         {
@@ -254,6 +294,13 @@ namespace WinHotCorner
                 {
                     case WM_TRIGGER:
                         _service.Trigger(m.WParam);
+                        return;
+                    case WM_CONFIG_CHANGED:
+                        _service.OnConfigurationChanged();
+                        return;
+                    case WM_EXIT:
+                        Log.Info("Asked to exit.");
+                        Application.ExitThread();
                         return;
                     case WM_DISPLAYCHANGE:
                     case WM_DPICHANGED:

@@ -19,6 +19,11 @@ using System.Runtime.InteropServices;
 // COM, set the ComVisible attribute to true on that type.
 [assembly: ComVisible(false)]
 
+#if NET5_0_OR_GREATER
+// The SDK adds this for "-windows" targets only when it generates the assembly info, which this project does not
+[assembly: System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
+
 // The following GUID is for the ID of the typelib if this project is exposed to COM
 [assembly: Guid("de05688d-75a2-4b2d-9621-f933054f118a")]
 

@@ -1,8 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <!-- netstandard2.0 so both the net48 service and a modern .NET control panel can reference it -->
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <!-- net48 for the hot corner, net10.0-windows for the control panel. Both have the registry API built in,
+         netstandard2.0 would need the Microsoft.Win32.Registry package and its DLLs next to the hot corner -->
+    <TargetFrameworks>net48;net10.0-windows</TargetFrameworks>
+    <!-- Lets the Windows target build on Linux too -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <RootNamespace>WinHotCorner</RootNamespace>
     <AssemblyName>ConfigManager</AssemblyName>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
