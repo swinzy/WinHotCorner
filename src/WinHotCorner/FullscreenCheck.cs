@@ -43,6 +43,11 @@ namespace WinHotCorner
         [DllImport("user32.dll", SetLastError = true)]
         private static extern int GetWindowRect(IntPtr hWnd, out RECT lpRect);
 
+        [DllImport("user32.dll")]
+        private static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint dwFlags);
+
+        private const uint MONITOR_DEFAULTTONEAREST = 2;
+
         private static List<IntPtr> exemptedHWnds = new List<IntPtr>();
         private static List<string> exemptedClassNames = new List<string>();
 
@@ -109,13 +114,17 @@ namespace WinHotCorner
         }
 
         /// <summary>
-        /// Hot corner should only be triggered when no fullscreen app is running (or app is exempted)
+        /// Hot corner should only be triggered when no fullscreen app is running on its monitor (or app is exempted),
+        /// like GNOME which checks the corner's monitor. A fullscreen app on another monitor does not block it.
         /// </summary>
+        /// <param name="monitor">the monitor of the hot corner</param>
         /// <returns></returns>
-        public static bool ShouldTrigger()
+        public static bool ShouldTrigger(IntPtr monitor)
         {
             IntPtr currentAppHWnd = GetForegroundWindow();
-            return IsExempted(currentAppHWnd) || !IsFullScreen(currentAppHWnd);
+            return IsExempted(currentAppHWnd)
+                || !IsFullScreen(currentAppHWnd)
+                || MonitorFromWindow(currentAppHWnd, MONITOR_DEFAULTTONEAREST) != monitor;
         }
 
       

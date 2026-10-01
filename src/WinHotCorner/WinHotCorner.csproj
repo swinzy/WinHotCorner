@@ -10,6 +10,7 @@
     <RootNamespace>WinHotCorner</RootNamespace>
     <AssemblyName>WinHotCorner</AssemblyName>
     <ApplicationIcon>WHC.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
@@ -19,10 +20,6 @@
     <PlatformTarget>x64</PlatformTarget>
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="MouseKeyHook" Version="5.7.1" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\ConfigManager\ConfigManager.csproj" />
