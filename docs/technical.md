@@ -155,7 +155,7 @@ installer\build.ps1
 
 It builds the hot corner, publishes the control panel and writes both installers to `installer\Output`. It needs git, for the version.
 
-GitHub Actions (`.github/workflows/build.yml`) builds both installers on every push and pull request; they can be downloaded from the run.
+GitHub Actions (`.github/workflows/build.yml`) builds both installers on every push and pull request; they can be downloaded from the run. A push of a commit that is already released, such as `devel` fast-forwarded to `main` after a release, builds nothing.
 
 ### Releases
 
