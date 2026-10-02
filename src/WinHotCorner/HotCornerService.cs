@@ -124,8 +124,8 @@ namespace WinHotCorner
         {
             // The user's key is created if it is missing, so that it can be watched.
             // The policy key may not exist, so watch its parent, which always does
-            _userWatcher = new RegistryWatcher(Registry.CurrentUser.CreateSubKey(ConfigManager.KEY_PATH), false);
-            _policyWatcher = new RegistryWatcher(Registry.LocalMachine.OpenSubKey(@"Software\Policies"), true);
+            _userWatcher = new RegistryWatcher(() => Registry.CurrentUser.CreateSubKey(ConfigManager.KEY_PATH), false);
+            _policyWatcher = new RegistryWatcher(() => Registry.LocalMachine.OpenSubKey(@"Software\Policies"), true);
 
             foreach (RegistryWatcher watcher in new[] { _userWatcher, _policyWatcher })
             {
