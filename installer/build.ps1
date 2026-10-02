@@ -1,6 +1,6 @@
 # Builds both installers into installer\Output (Windows, needs the .NET SDK and Inno Setup 7):
-#   WinHotCorner-<version>-setup.exe              the hot corner only
-#   WinHotCornerControlPanel-<version>-setup.exe  the control panel, installs the hot corner too if needed
+#   WinHotCorner-Full-<version>-setup.exe           the hot corner and the control panel
+#   WinHotCorner-HotCornerOnly-<version>-setup.exe  the hot corner only
 #
 # Every build raises the third number of the version (build) in src\Directory.Build.props first;
 # -NoBump builds the current version again.

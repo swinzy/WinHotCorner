@@ -2,15 +2,16 @@
 ;
 ; Build with build.ps1, which first builds the hot corner installer and publishes the control panel.
 ;
-; It contains the hot corner installer too, and runs it when the hot corner is missing or older, so this one
-; installer is enough to get both. Each keeps its own entry in Installed apps and can be uninstalled alone.
+; Published as the "Full" installer: it contains the hot corner installer ("HotCornerOnly") and runs it when the
+; hot corner is missing or older, so this one installer is enough to get both, and running it after HotCornerOnly
+; only adds the control panel. Each keeps its own entry in Installed apps and can be uninstalled alone.
 
 #define AppName "WinHotCorner Control Panel"
 #define PublishDir "Output\ControlPanel"
 #define AppExe "WinHotCornerControlPanel.exe"
 #define AppVersion GetVersionNumbersString(PublishDir + "\" + AppExe)
 #define HotCornerVersion GetVersionNumbersString("..\src\WinHotCorner\bin\Release\net48\WinHotCorner.exe")
-#define HotCornerSetup "WinHotCorner-" + HotCornerVersion + "-setup.exe"
+#define HotCornerSetup "WinHotCorner-HotCornerOnly-" + HotCornerVersion + "-setup.exe"
 ; AppId of WinHotCorner.iss, to find the installed hot corner
 #define HotCornerAppId "{1F9F1765-5178-4A09-9EA9-34E77B75CC21}"
 
@@ -33,7 +34,7 @@ SetupIconFile=..\src\WinHotCorner\WHC.ico
 UninstallDisplayIcon={app}\{#AppExe}
 UninstallDisplayName={#AppName}
 OutputDir=Output
-OutputBaseFilename=WinHotCornerControlPanel-{#AppVersion}-setup
+OutputBaseFilename=WinHotCorner-Full-{#AppVersion}-setup
 WizardStyle=modern
 Compression=lzma2/max
 SolidCompression=yes
