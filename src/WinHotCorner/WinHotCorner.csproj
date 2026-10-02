@@ -1,0 +1,34 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Stays on .NET Framework: ships with Windows 10 1903+ and Windows 11, nothing to install -->
+    <TargetFramework>net48</TargetFramework>
+    <!-- Release has no window at all; Debug keeps a console for watching the log -->
+    <OutputType>WinExe</OutputType>
+    <OutputType Condition=" '$(Configuration)' == 'Debug' ">Exe</OutputType>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>WinHotCorner</RootNamespace>
+    <AssemblyName>WinHotCorner</AssemblyName>
+    <ApplicationIcon>WHC.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- Only the version attributes are generated (from Directory.Build.props), the rest is in AssemblyInfo.cs -->
+    <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
+    <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
+    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
+    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
+    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
+    <GenerateAssemblyCopyrightAttribute>false</GenerateAssemblyCopyrightAttribute>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <PlatformTarget>x64</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ConfigManager\ConfigManager.csproj" />
+  </ItemGroup>
+
+</Project>

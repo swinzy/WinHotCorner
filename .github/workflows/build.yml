@@ -1,0 +1,130 @@
+# Builds both installers on every push and pull request. Every push to main, i.e. every merged pull request,
+# is a release: the build is published as a GitHub release. Releases share this workflow with the other
+# builds, so they share one run number, which numbers the builds (see "Versions" in docs/technical.md).
+name: Build
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  # On main: release the current commit by hand, when its release run can no longer be re-run
+  workflow_dispatch:
+
+permissions:
+  contents: write  # release, metadata tags
+  actions: read    # earlier runs and attempts, for the revision and the release notes
+
+env:
+  RELEASE: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
+
+# Only one release at a time; other builds run in parallel
+concurrency:
+  group: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && 'release' || github.run_id }}
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # all history and tags: the version comes from the metadata tags
+          fetch-tags: true
+
+      - name: Check whether an earlier attempt already released
+        id: released
+        if: env.RELEASE == 'true'
+        run: |
+          trap { Write-Output "::error::$($_.Exception.Message)"; exit 1 }
+          $tag = git tag --points-at HEAD --list 'v*' | Select-Object -First 1
+          if (-not $tag) { Add-Content $env:GITHUB_OUTPUT 'done=false'; exit 0 }
+          if ([int]$env:GITHUB_RUN_ATTEMPT -eq 1) { throw "This commit is already released as $tag" }
+          # An earlier attempt of this run published it: don't build or publish it again, only finish the rest
+          $version = $tag.Substring(1).Split('.')
+          Add-Content $env:GITHUB_OUTPUT 'done=true', "major=$($version[0])", "minor=$($version[1])"
+          "Already released as $tag by an earlier attempt; only the remaining steps run"
+
+      - uses: actions/setup-dotnet@v4
+        if: steps.released.outputs.done != 'true'
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install Inno Setup 7
+        if: steps.released.outputs.done != 'true'
+        run: |
+          trap { Write-Output "::error::$($_.Exception.Message)"; exit 1 }
+          $exe = Join-Path $env:RUNNER_TEMP 'innosetup.exe'
+          for ($try = 1; ; $try++) {
+            try {
+              Invoke-WebRequest 'https://github.com/jrsoftware/issrc/releases/download/is-7_1_0/innosetup-7.1.0-x64.exe' -OutFile $exe
+              break
+            }
+            catch {
+              if ($try -ge 3) { throw "Cannot download Inno Setup: $($_.Exception.Message)" }
+              "Download failed ($($_.Exception.Message)), trying again in 15 s"
+              Start-Sleep 15
+            }
+          }
+          $signature = Get-AuthenticodeSignature $exe
+          if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notmatch '^CN=Pyrsys B\.V\.,') {
+            throw "Unexpected signature on the Inno Setup installer: $($signature.Status) $($signature.SignerCertificate.Subject)"
+          }
+          Start-Process $exe -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', '/ALLUSERS' -Wait
+
+      - name: Build
+        id: build
+        if: steps.released.outputs.done != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          trap { Write-Output "::error::$($_.Exception.Message)"; exit 1 }
+          installer\build.ps1 -Release:$${{ env.RELEASE == 'true' }}
+
+      - uses: actions/upload-artifact@v4
+        if: steps.released.outputs.done != 'true'
+        with:
+          name: WinHotCorner-${{ steps.build.outputs.file-name-version }}
+          path: installer/Output/*.exe
+          if-no-files-found: error
+
+      - name: Publish the release
+        if: env.RELEASE == 'true' && steps.released.outputs.done != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.build.outputs.file-name-version }}
+        run: |
+          trap { Write-Output "::error::$($_.Exception.Message)"; exit 1 }
+          $tag = "v$env:VERSION"
+
+          # Drafts left by failed attempts or runs
+          gh release list --json tagName,isDraft --jq '.[] | select(.isDraft) | .tagName' | ForEach-Object {
+            gh release delete $_ --yes
+            if ($LASTEXITCODE -ne 0) { throw "Cannot delete the draft $_" }
+          }
+
+          $notes = Join-Path $env:RUNNER_TEMP 'notes.md'
+          .github\scripts\release-notes.ps1 -Version $env:VERSION -OutFile $notes
+
+          # A draft first: nobody sees it, and GitHub creates the tag only when it is published
+          $files = (Get-ChildItem installer\Output\*.exe).FullName
+          gh release create $tag @files --draft --target $env:GITHUB_SHA --title "WinHotCorner $env:VERSION" --notes-file $notes
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot create the draft release' }
+
+          $assets = gh release view $tag --json assets --jq '[.assets[] | select(.size > 0)] | length'
+          if ([int]$assets -ne 2) { throw "The draft release has $assets installers instead of 2; it stays a draft" }
+
+          gh release edit $tag --draft=false
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot publish the release' }
+
+      - name: Start the next development line
+        if: env.RELEASE == 'true'
+        env:
+          MAJOR: ${{ steps.build.outputs.major || steps.released.outputs.major }}
+          MINOR: ${{ steps.build.outputs.minor || steps.released.outputs.minor }}
+        run: |
+          trap { Write-Output "::error::$($_.Exception.Message)"; exit 1 }
+          $line = "metadata/line-$env:MAJOR.$([int]$env:MINOR + 1)"
+          if (git tag --list $line) { "$line exists already"; exit 0 }
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' `
+            tag -a $line -m "Start of the next development line, after the release from run $env:GITHUB_RUN_NUMBER" -m "baseline-run: $env:GITHUB_RUN_NUMBER" $env:GITHUB_SHA
+          git push origin "refs/tags/$line"
+          if ($LASTEXITCODE -ne 0) { throw "Cannot push $line" }

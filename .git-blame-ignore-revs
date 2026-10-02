@@ -1,0 +1,5 @@
+# Commits that git blame should skip (GitHub uses this file automatically;
+# locally: git config blame.ignoreRevsFile .git-blame-ignore-revs)
+
+# Store text files with LF in the repository (line endings only)
+14ab9f9831b3bc805ea8025f2d99843b30d7cfa9

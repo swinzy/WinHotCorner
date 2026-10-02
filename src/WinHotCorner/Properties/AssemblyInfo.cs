@@ -5,8 +5,8 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("WinHotCorner ConfigManager")]
-[assembly: AssemblyDescription("A shared library for configuring WinHotCorner")]
+[assembly: AssemblyTitle("WinHotCorner")]
+[assembly: AssemblyDescription("Opens Task View when the pointer hits the top-left corner")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Stephen Zhang")]
 [assembly: AssemblyProduct("WinHotCorner")]
@@ -20,6 +20,6 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("de05688d-75a2-4b2d-9621-f933054f118a")]
+[assembly: Guid("16ba4ae2-691e-495c-affc-532a994857ed")]
 
 // Version: set for every project in src\Directory.Build.props (raised by installer\build.ps1)

@@ -17,111 +17,69 @@ Classic GNOME hot corner function for Windows!
 ![CSharp](https://img.shields.io/badge/C%23-5C2D91?style=flat-square&logo=.net&logoColor=white)
 ![Windows 11](https://img.shields.io/badge/Designed%20for%20Windows%2011-%230079d5.svg?style=flat-square&logo=Windows%2011&logoColor=white)
 ![Inkscape](https://img.shields.io/badge/Inkscape-e0e0e0?style=flat-square&logo=inkscape&logoColor=080A13)
+
+<img src="res/controlpanel_scrshot.png" alt="WinHotCorner Control Panel" width="640px"/>
+
 </div>
 
-<div align="center">
-  
-## Introduction
-The aim of this repository is to replicate the classic GNOME hot corner bahaviour on Windows as close as possible.
+## What it does
 
+Push the mouse pointer into the top-left corner of a screen and Task View opens, just like the Activities overview on GNOME. No keyboard needed.
 
-  <table>
-    <tbody>
-      <tr>
-        <td><img src="res/serviceworker_scrshot.png" alt="Service worker screenshot" height="100%"/></td>
-        <td><img src="res/controlpanel_scrshot.png" alt="Control panel screenshot" height="100%"/></td>
-      </tr>  
-            <tr>
-        <th>Service Worker</th>
-        <th>Control Panel</th>  
-      </tr>
-    </tbody>
-  </table>
-  
-</div>
+It feels like GNOME too: the corner reacts to a deliberate push, not to the pointer just passing by, and it waits until you move away before it can trigger again.
 
-The GNOME hot corner has one function, that is when user's mouse cursor hits the top left corner of the display, it will show the "Activity" page, which allows user to quickly navigate through opened apps without needing to touch your keyboard.
-
-Hence this app will allow user to have the same experience as on GNOME.
-
-<div align="center">
-  
 ## Philosophy
-</div>
 
-The principles of design of this app are:
-<div align="center">
-  
-### Simple
-The app should just work out of the box, without **needing** to be configured in any way (although it should **allow** configurations).
-### Lightweight
-The app should be small in size, consumes little resources.
-### Elegant
-The app should have elegant design, and blend into your system, as if it was a Windows feature.
-</div>
+- **Simple**: works out of the box, nothing to set up (but you can).
+- **Lightweight**: small, with no window, no tray icon and no shortcuts.
+- **Elegant**: blends into Windows, as if it were a Windows feature.
 
-<div align="center">
-  
-## Functionalities
-</div>
+## Install
 
-- [X] **Trigger hot corner**
-- [X] **Require force**: hot corner will not trigger simply when cursor is **at** the top-left corner, but when user **hits** the top-left corner, similar to GNOME default behaviour.
-- [X] **Singleton**: service worker will not create multiple instances even when user accidentally runs mutiple times.
-- [X] **Disable when fullscreen**: hot corner will not trigger if foreground application is in fullscreen mode.
-- [ ] **Multi-display awareness**: user can choose whether hotcorner triggers on primary display only or all displays.
-- [X] **Disable when mouse down**: prevents accidental trigger while dragging/using gestures.
-- [X] **Configurable**: service worker reads configurations from config file.
-- [ ] **Automatically configure run on startup**
-- [ ] **Control panel configurable**: service worker can be configured via the WinHotCorner control panel.
-- [ ] **Control panel controllable**: service worker can be killed/started via the WinHotCorner control panel.
+Download **one** installer from [Releases](https://github.com/swinzy/WinHotCorner/releases):
 
-<div align="center">
-  
-## Configuration
-</div>
+| Installer | Installs | |
+|---|---|---|
+| **`WinHotCorner-Full-<version>-setup.exe`** | the hot corner **and** the control panel | Recommended |
+| **`WinHotCorner-HotCornerOnly-<version>-setup.exe`** | the hot corner only (about 2 MB) | If you don't want the control panel |
 
-See [Configuration](https://github.com/m1nicrusher/WinHotCorner/wiki/Configuration) section of the wiki.
+You never need both: *Full* already contains the hot corner. If you installed *HotCornerOnly* and want the control panel later, just run *Full*: it adds the control panel and leaves the hot corner as it is (it only updates it if *Full* is newer).
 
-<div align="center">
-  
-## Components
-</div>
+The hot corner starts right away and from then on whenever you sign in. In *Installed apps* the two parts appear as *WinHotCorner* and *WinHotCorner Control Panel*.
 
-### Service Worker
-The WinHotCorner Service Worker is the main component of this app. It does not have a graphical user interface (GUI), and will run (and stay forever) in the background as soon as user executes it.
+The installers are not signed yet, so Windows may show a SmartScreen warning: choose *More info* → *Run anyway*.
 
-It simply provides the functionality of this app.
+**Requirements**: Windows 10 version 1903 or later, or Windows 11; 64-bit.
 
-It is configurable either via Windows Registry or the WinHotCorner Control Panel.
-### Control Panel
-The WinHotCorner Control Panel is a totally optional and separate application. Users are not required to install this component to enjoy the full function of the app.
+## Settings
 
-It simply provides an elegant entry of tweaking the behaviour of the service worker.
+Open **WinHotCorner Control Panel** from the Start menu to:
 
-Removing this component will not affect the functionality of the service worker.
+- turn the hot corner off or on,
+- keep it from triggering while an app is fullscreen on that screen (games, videos), or while a mouse button is held (dragging),
+- change how hard you have to push into the corner.
 
-<div align="center">
-  
-## Mechanism
-</div>
+Changes apply immediately. Without the control panel, the hot corner works with its defaults; settings can also be set in the registry or by Group Policy, see the [technical notes](docs/technical.md#configuration).
 
-The application utilises a global mouse hook[^1] to detect cursor postion. And when it detects that the mouse is hitting the top-left corner, the app will then simulate[^2] <kbd>Win</kbd> + <kbd>Tab</kbd> hotkey to trigger the "Task Switch" interface.
+## Turning it off or removing it
 
-<div align="center">
-  
+- **Turn it off**: switch *Hot corner* off in the control panel. It stays off, also after signing in again.
+- **Remove it**: *Settings* → *Apps* → *Installed apps* → *WinHotCorner* (and *WinHotCorner Control Panel*) → *Uninstall*.
+
+## Multiple screens
+
+Every screen whose top-left corner is free (no other screen directly to its left or above it) has a hot corner. On a side-by-side setup, that is the left screen.
+
 ## Troubleshooting
-</div>
 
-#### Hot corner does not trigger when some applications are running (i.e. Task Manager, Task Scheduler, Registry Editor)
-**Solution**: Run the service worker as administrator.
+**It does not trigger while Task Manager or another app running as administrator is in front.**
+WinHotCorner runs with your highest privileges so that this works. On a standard (non-administrator) account it cannot, because Windows does not let normal programs control administrator windows.
 
-**Reason**: Because of a security constraint of Windows, any application running as user will not be able to hook global mouse/keyboard onto any application running as administrator, hence the app cannot detect hot corner when admin app is running.
+**Something else is wrong.**
+Errors are written to `%LOCALAPPDATA%\WinHotCorner\WinHotCorner.log`. Please attach it to an [issue](https://github.com/swinzy/WinHotCorner/issues).
 
-<div align="center">
-  
-## References
-</div>
+## How it works
 
-[^1]: [Global Mouse Hook](https://github.com/gmamaladze/globalmousekeyhook)
-[^2]: [Input Simulator](https://github.com/michaelnoonan/inputsimulator)
+See the [technical notes](docs/technical.md): how a push is detected, configuration, startup, the installers and how to build.
+
+Planned work is in [TODO.md](TODO.md).

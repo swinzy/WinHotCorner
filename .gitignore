@@ -9,6 +9,12 @@ TestApp/
 # Haven't finish developing
 WinHotCorner Control Panel/
 
+# Local development notes
+DEVTODO.md
+
+# Installer build output
+installer/Output/
+
 # User-specific files
 *.rsuser
 *.suo
