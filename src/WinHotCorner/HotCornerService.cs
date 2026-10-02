@@ -53,7 +53,7 @@ namespace WinHotCorner
         private readonly MouseHook _hook = new MouseHook();
         private readonly Timer _watchdog = new Timer { Interval = WATCHDOG_INTERVAL };
         private MessageWindow _window;
-        private List<PressureBarrier> _barriers = new List<PressureBarrier>();
+        private List<CornerPressure> _corners = new List<CornerPressure>();
 
         /// <summary>
         /// Mouse buttons currently held, one bit per button
@@ -92,7 +92,7 @@ namespace WinHotCorner
             }
 
             ListenForExit();
-            UpdateBarriers();
+            UpdateCorners();
             _hook.Install();
             GetCursorPos(out _lastCursorPos);
             _watchdog.Start();
@@ -189,9 +189,9 @@ namespace WinHotCorner
         {
             // Most movements are nowhere near a corner: skip them without any system call
             bool involved = false;
-            for (int i = 0; i < _barriers.Count; i++)
+            for (int i = 0; i < _corners.Count; i++)
             {
-                if (_barriers[i].IsHit || _barriers[i].IsNear(pt))
+                if (_corners[i].IsHeld || _corners[i].IsNear(pt))
                 {
                     involved = true;
                     break;
@@ -204,11 +204,11 @@ namespace WinHotCorner
             GetCursorPos(out POINT prev);
 
             double threshold = Configuration.PressureThreshold;
-            for (int i = 0; i < _barriers.Count; i++)
+            for (int i = 0; i < _corners.Count; i++)
             {
                 // Trigger later from the message loop, so the hook returns right away
-                if (_barriers[i].OnMove(prev, pt, time, threshold))
-                    PostMessage(_window.Handle, WM_TRIGGER, _barriers[i].Corner.Monitor, IntPtr.Zero);
+                if (_corners[i].OnMove(prev, pt, time, threshold))
+                    PostMessage(_window.Handle, WM_TRIGGER, _corners[i].Corner.Monitor, IntPtr.Zero);
             }
         }
 
@@ -241,17 +241,17 @@ namespace WinHotCorner
         /// <summary>
         /// Rebuilds the corners if the monitor layout changed
         /// </summary>
-        private void UpdateBarriers()
+        private void UpdateCorners()
         {
             List<HotCorner> corners = DisplayLayout.GetHotCorners();
 
-            bool same = corners.Count == _barriers.Count;
+            bool same = corners.Count == _corners.Count;
             for (int i = 0; same && i < corners.Count; i++)
-                same = corners[i].Equals(_barriers[i].Corner);
+                same = corners[i].Equals(_corners[i].Corner);
             if (same)
                 return;
 
-            _barriers = corners.ConvertAll(corner => new PressureBarrier(corner));
+            _corners = corners.ConvertAll(corner => new CornerPressure(corner));
             Log.Info($"Hot corners: {string.Join(", ", corners)}");
         }
 
@@ -272,7 +272,7 @@ namespace WinHotCorner
             _lastEventCount = _hook.EventCount;
             _lastCursorPos = pos;
 
-            UpdateBarriers();
+            UpdateCorners();
         }
 
         /// <summary>
@@ -305,7 +305,7 @@ namespace WinHotCorner
                     case WM_DISPLAYCHANGE:
                     case WM_DPICHANGED:
                     case WM_SETTINGCHANGE:
-                        _service.UpdateBarriers();
+                        _service.UpdateCorners();
                         break;
                 }
                 base.WndProc(ref m);

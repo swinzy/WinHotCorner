@@ -2,6 +2,6 @@
   <PropertyGroup>
     <!-- Version of every project and of both installers. installer\build.ps1 raises the third number (build)
          before every build, so this is the version of the last build -->
-    <Version>1.0.2.0</Version>
+    <Version>1.0.3.0</Version>
   </PropertyGroup>
 </Project>
