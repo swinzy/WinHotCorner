@@ -10,6 +10,7 @@
 *.ps1        text eol=crlf
 
 *.md         text eol=lf
+*.yml        text eol=lf
 *.svg        text eol=lf
 .gitignore   text eol=lf
 .gitattributes text eol=lf

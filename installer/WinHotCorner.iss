@@ -8,13 +8,22 @@
 #define AppName "WinHotCorner"
 #define BinDir "..\src\WinHotCorner\bin\Release\net48"
 #define AppExe "WinHotCorner.exe"
-#define AppVersion GetVersionNumbersString(BinDir + "\" + AppExe)
+; The numeric version of the built exe; build.ps1 passes the version to show (AppVersion) and to put in the file
+; name (FileNameVersion), see "Versions" in docs\technical.md
+#define NumericVersion GetVersionNumbersString(BinDir + "\" + AppExe)
+#ifndef AppVersion
+  #define AppVersion NumericVersion
+#endif
+#ifndef FileNameVersion
+  #define FileNameVersion NumericVersion
+#endif
 #define TaskName "WinHotCorner"
 
 [Setup]
 AppId={{1F9F1765-5178-4A09-9EA9-34E77B75CC21}
 AppName={#AppName}
 AppVersion={#AppVersion}
+VersionInfoVersion={#NumericVersion}
 AppPublisher=Stephen Zhang
 AppPublisherURL=https://github.com/swinzy/WinHotCorner
 AppSupportURL=https://github.com/swinzy/WinHotCorner/issues
@@ -32,7 +41,7 @@ SetupIconFile=..\src\WinHotCorner\WHC.ico
 UninstallDisplayIcon={app}\{#AppExe}
 UninstallDisplayName={#AppName}
 OutputDir=Output
-OutputBaseFilename=WinHotCorner-HotCornerOnly-{#AppVersion}-setup
+OutputBaseFilename=WinHotCorner-HotCornerOnly-{#FileNameVersion}-setup
 WizardStyle=modern
 Compression=lzma2
 SolidCompression=yes

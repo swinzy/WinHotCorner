@@ -9,6 +9,7 @@ How WinHotCorner works, how it is configured and started, and how to build it.
 - [Startup and privileges](#startup-and-privileges)
 - [Control panel](#control-panel)
 - [Installers](#installers)
+- [Versions](#versions)
 - [Building](#building)
 - [References](#references)
 
@@ -113,6 +114,37 @@ Both are Inno Setup 7 scripts in `installer`, published as two downloads:
 - `WinHotCorner.iss` builds **`WinHotCorner-HotCornerOnly-<version>-setup.exe`**: the hot corner. Installs to `Program Files\WinHotCorner`, registers the scheduled task and starts it. Before installing, upgrading or uninstalling it stops the hot corner in every session and waits until it has exited. Uninstalling keeps the user's settings.
 - `ControlPanel.iss` builds **`WinHotCorner-Full-<version>-setup.exe`**: the control panel, in `Program Files\WinHotCorner\ControlPanel`, with a Start menu shortcut. It contains the hot corner installer and runs it when the hot corner is missing or older, so it can install both. Each product has its own entry in Installed apps and can be uninstalled alone.
 
+## Versions
+
+All three projects share one version, `major.minor.build.revision`. It says which version is being developed: every `1.1.x.x` is a development build of 1.1, and the release of 1.1 is simply the last build of that line.
+
+| Part | Meaning |
+|---|---|
+| Major | `VersionMajor` in `src/Directory.Build.props`, changed by hand. After changing it to 2, the next build is `2.0.1.0`. |
+| Minor | The development line of that major: 0 until its first release, then one more after each release. |
+| Build | Builds since the line started, counted by GitHub Actions; a failed build counts too. A new line starts at 1. |
+| Revision | How many times the same commit was built before (the code is the same, the binaries may not be). |
+
+For example: after 1.0 is released, 1.1 is developed as `1.1.1.0`, `1.1.2.0`, …; releasing it gives `1.1.57`; then 1.2 starts at `1.2.1.0`.
+
+`installer\version.ps1` works it out:
+
+- **Build number**: the workflow's run number minus the run number where the line started. The run number counts across the whole repository, so branches, deleted branches, squash merges and rewritten history cannot give two builds the same number. Numbers can be skipped, never reused.
+- **Where a line starts** is kept in annotated tags `metadata/line-<major>.<minor>`, with `baseline-run: <run number>` in their message. They are not code versions; do not delete or move them. The release run tags the next line; the first build after changing the major version tags `<major>.0`.
+- **Revision**: GitHub's API tells whether the same commit was built before in this line; if so, the build keeps that build number and the revision counts the earlier builds, re-runs included. (Two runs of one commit at the very same time could get the same revision.) Pull request runs build a temporary merge commit, which is always new.
+- **Releases** are the exception: always the next build number, revision 0, even if the commit was built before. So a release is named with three numbers: tag `v1.1.57`, `WinHotCorner-Full-1.1.57-setup.exe`, and `1.1.57` in Installed apps. A release run cannot be re-run (start a new one, which gets a new number), and a commit cannot be released twice. The release is created as a draft, checked, and only then published, so a failed run never leaves an empty release.
+- **Local builds** are always `<major>.<minor>.0.0`: anyone can build locally, so a local build cannot have a number that only ever grows, and 0 never appears in an official build. A local build is older than any CI build of its line, so installing the *Full* installer of a local build over a CI build leaves the hot corner as it is (uninstall it first, or use *HotCornerOnly*, which always installs).
+
+The four numbers are the file and assembly version (Windows allows at most 65535 for each; the build stops if one is larger). The product version string and Installed apps add where a build comes from:
+
+| | Installed apps | Product version |
+|---|---|---|
+| Release | `1.1.57` | `1.1.57.0+3f2a9c1` |
+| GitHub Actions | `1.1.56.2+3f2a9c1` | same |
+| Local | `1.1.0.0+3f2a9c1.local.a91c03be` | same |
+
+After `+` come the commit, then for a local build `local` and a random id that tells local builds apart, and `devel` when the working tree has uncommitted changes.
+
 ## Building
 
 On Windows, with the [.NET 10 SDK](https://dotnet.microsoft.com/download) and [Inno Setup 7](https://jrsoftware.org/isinfo.php):
@@ -121,9 +153,11 @@ On Windows, with the [.NET 10 SDK](https://dotnet.microsoft.com/download) and [I
 installer\build.ps1
 ```
 
-It builds the hot corner, publishes the control panel and writes both installers to `installer\Output`.
+It builds the hot corner, publishes the control panel and writes both installers to `installer\Output`. It needs git, for the version.
 
-- **Version**: `src/Directory.Build.props` holds the version of every project; the installers take it from the built programs. `build.ps1` raises the third number (build) before every build; `build.ps1 -NoBump` builds the same version again. Commit the raised version.
+GitHub Actions (`.github/workflows/build.yml`) builds both installers on every push and pull request; they can be downloaded from the run. Running the workflow by hand on `main` with *Publish a release* ticked publishes a release.
+
+- **Version**: worked out by `installer\version.ps1`, see [Versions](#versions). A local build is always `<major>.<minor>.0.0`.
 - **Visual Studio** is not needed. The control panel needs Windows to build (WinUI's XAML compiler); the hot corner and ConfigManager also build on Linux or macOS with the .NET SDK, e.g. `dotnet build src/WinHotCorner/WinHotCorner.csproj`.
 - The control panel is trimmed and references only the WinUI part of the Windows App SDK (the full package adds AI, ML and Search, over 200 MB). `EnableMsixTooling` is needed even without MSIX, or publish leaves out the `.pri` resources and the app crashes at start.
 - **Line endings**: `.gitattributes` stores text files with LF; C#, project, XAML, Inno Setup and PowerShell files are checked out with CRLF.

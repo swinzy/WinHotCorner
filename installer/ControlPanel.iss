@@ -9,9 +9,17 @@
 #define AppName "WinHotCorner Control Panel"
 #define PublishDir "Output\ControlPanel"
 #define AppExe "WinHotCornerControlPanel.exe"
-#define AppVersion GetVersionNumbersString(PublishDir + "\" + AppExe)
+; The numeric version of the built exe; build.ps1 passes the version to show (AppVersion) and to put in the file
+; name (FileNameVersion), see "Versions" in docs\technical.md. Both programs always have the same version
+#define NumericVersion GetVersionNumbersString(PublishDir + "\" + AppExe)
+#ifndef AppVersion
+  #define AppVersion NumericVersion
+#endif
+#ifndef FileNameVersion
+  #define FileNameVersion NumericVersion
+#endif
 #define HotCornerVersion GetVersionNumbersString("..\src\WinHotCorner\bin\Release\net48\WinHotCorner.exe")
-#define HotCornerSetup "WinHotCorner-HotCornerOnly-" + HotCornerVersion + "-setup.exe"
+#define HotCornerSetup "WinHotCorner-HotCornerOnly-" + FileNameVersion + "-setup.exe"
 ; AppId of WinHotCorner.iss, to find the installed hot corner
 #define HotCornerAppId "{1F9F1765-5178-4A09-9EA9-34E77B75CC21}"
 
@@ -19,6 +27,7 @@
 AppId={{AB149040-E4B0-4C7A-ACDD-94165A363C97}
 AppName={#AppName}
 AppVersion={#AppVersion}
+VersionInfoVersion={#NumericVersion}
 AppPublisher=Stephen Zhang
 AppPublisherURL=https://github.com/swinzy/WinHotCorner
 AppSupportURL=https://github.com/swinzy/WinHotCorner/issues
@@ -34,7 +43,7 @@ SetupIconFile=..\src\WinHotCorner\WHC.ico
 UninstallDisplayIcon={app}\{#AppExe}
 UninstallDisplayName={#AppName}
 OutputDir=Output
-OutputBaseFilename=WinHotCorner-Full-{#AppVersion}-setup
+OutputBaseFilename=WinHotCorner-Full-{#FileNameVersion}-setup
 WizardStyle=modern
 Compression=lzma2/max
 SolidCompression=yes
@@ -66,6 +75,24 @@ begin
     ' | Stop-Process -Force -PassThru | Wait-Process -Timeout 10 -ErrorAction SilentlyContinue"');
 end;
 
+// The number part of a version shown in Installed apps, as a.b.c.d: "1.1.57" -> "1.1.57.0",
+// "1.1.56.2+3f2a9c1" -> "1.1.56.2"
+function NumericPart(const Version: String): String;
+var
+  I, Dots: Integer;
+begin
+  Result := Version;
+  I := Pos('+', Result);
+  if I > 0 then
+    Result := Copy(Result, 1, I - 1);
+  Dots := 0;
+  for I := 1 to Length(Result) do
+    if Result[I] = '.' then
+      Dots := Dots + 1;
+  if Dots = 2 then
+    Result := Result + '.0';
+end;
+
 // True if the hot corner is not installed, or older than the one inside this installer
 function HotCornerNeedsInstall(): Boolean;
 var
@@ -78,7 +105,7 @@ begin
     Result := True;
     Exit;
   end;
-  Result := StrToVersion(Installed, InstalledVersion) and StrToVersion('{#HotCornerVersion}', BundledVersion)
+  Result := StrToVersion(NumericPart(Installed), InstalledVersion) and StrToVersion('{#HotCornerVersion}', BundledVersion)
     and (ComparePackedVersion(InstalledVersion, BundledVersion) < 0);
 end;
 
