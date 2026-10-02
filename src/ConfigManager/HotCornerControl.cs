@@ -20,6 +20,11 @@ namespace WinHotCorner
         public const string EXIT_EVENT_NAME = @"Local\WinHotCorner.Exit";
 
         /// <summary>
+        /// The scheduled task the installer registers: starts the hot corner at logon with the user's highest privileges
+        /// </summary>
+        public const string TASK_NAME = "WinHotCorner";
+
+        /// <summary>
         /// Checks if the hot corner is running in this session
         /// </summary>
         public static bool IsRunning()

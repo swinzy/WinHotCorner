@@ -101,6 +101,9 @@ begin
     '  <RegistrationInfo>' + #13#10 +
     '    <Author>Stephen Zhang</Author>' + #13#10 +
     '    <Description>{#AppName}: opens Task View when the pointer hits the top-left corner.</Description>' + #13#10 +
+    // Admins and SYSTEM manage the task; every user may read and run it, so the control panel, which runs
+    // without elevation, can start the hot corner the same way as at logon
+    '    <SecurityDescriptor>D:(A;;FA;;;BA)(A;;FA;;;SY)(A;;GRGX;;;BU)</SecurityDescriptor>' + #13#10 +
     '  </RegistrationInfo>' + #13#10 +
     '  <Triggers>' + #13#10 +
     '    <LogonTrigger>' + #13#10 +

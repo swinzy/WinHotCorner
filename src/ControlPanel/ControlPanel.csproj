@@ -1,0 +1,50 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.18362.0</TargetPlatformMinVersion>
+    <RootNamespace>WinHotCorner.ControlPanel</RootNamespace>
+    <AssemblyName>WinHotCornerControlPanel</AssemblyName>
+    <ApplicationIcon>..\WinHotCorner\WHC.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Nullable>enable</Nullable>
+    <UseWinUI>true</UseWinUI>
+
+    <!-- Unpackaged and self-contained: runs without installing .NET or the Windows App SDK runtime -->
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <Platforms>x64</Platforms>
+    <!-- Despite the name, needed without MSIX too: otherwise publish leaves out the .pri resources and the app crashes -->
+    <EnableMsixTooling>true</EnableMsixTooling>
+    <!-- Cuts the published size by more than half (170 MB to about 78 MB) -->
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>partial</TrimMode>
+
+    <Product>WinHotCorner</Product>
+    <AssemblyTitle>WinHotCorner Control Panel</AssemblyTitle>
+    <Description>Settings for WinHotCorner</Description>
+    <Company>Stephen Zhang</Company>
+    <Copyright>Copyright © Stephen Zhang 2026</Copyright>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Only WinUI: the Microsoft.WindowsAppSDK package also brings AI, ML and Search, over 200 MB -->
+    <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="2.3.9" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.InteractiveExperiences" Version="2.1.9" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2705" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ConfigManager\ConfigManager.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\WinHotCorner\WHC.ico" Link="WHC.ico" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Logo.scale-100.png ... Logo.scale-400.png, picked by display scale; rendered from res\WHC_Logo.svg -->
+    <Content Include="Assets\Logo.scale-*.png" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

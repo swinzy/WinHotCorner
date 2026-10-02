@@ -42,6 +42,53 @@ namespace WinHotCorner
         }
 
         /// <summary>
+        /// Sets one of the user's values (the name of a <see cref="Configuration"/> property)
+        /// </summary>
+        public static void SetUserValue(string name, int value)
+        {
+            using (RegistryKey key = Registry.CurrentUser.CreateSubKey(KEY_PATH))
+                key.SetValue(name, value, RegistryValueKind.DWord);
+        }
+
+        /// <summary>
+        /// Removes one of the user's values, so the default applies again
+        /// </summary>
+        public static void ClearUserValue(string name)
+        {
+            using (RegistryKey key = Registry.CurrentUser.OpenSubKey(KEY_PATH, true))
+                key?.DeleteValue(name, false);
+        }
+
+        /// <summary>
+        /// The settings that Group Policy sets, which the user cannot change
+        /// </summary>
+        /// <returns>names of <see cref="Configuration"/> properties</returns>
+        public static ISet<string> GetPolicySettings()
+        {
+            var names = new HashSet<string>();
+            var ignored = new List<string>();
+            try
+            {
+                using (RegistryKey policy = Registry.LocalMachine.OpenSubKey(POLICY_KEY_PATH))
+                {
+                    foreach (string name in new[] { nameof(Configuration.Enabled), nameof(Configuration.DisableWhenFullscreen), nameof(Configuration.DisableWhenMouseDown) })
+                    {
+                        if (TryRead(policy, "policy", name, 0, 1, ignored, out _))
+                            names.Add(name);
+                    }
+                    if (TryRead(policy, "policy", nameof(Configuration.PressureThreshold),
+                            Configuration.MIN_PRESSURE_THRESHOLD, Configuration.MAX_PRESSURE_THRESHOLD, ignored, out _))
+                        names.Add(nameof(Configuration.PressureThreshold));
+                }
+            }
+            catch (Exception)
+            {
+                // Cannot read the policy key: nothing is shown as managed, the hot corner reports the problem
+            }
+            return names;
+        }
+
+        /// <summary>
         /// Loads the configuration: policy value if set, otherwise the user's value, otherwise the default
         /// </summary>
         /// <param name="problems">receives a description of every value that was ignored or could not be read</param>
