@@ -132,7 +132,7 @@ For example: after 1.0 is released, 1.1 is developed as `1.1.1.0`, `1.1.2.0`, â€
 - **Build number**: the workflow's run number minus the run number where the line started. The run number counts across the whole repository, so branches, deleted branches, squash merges and rewritten history cannot give two builds the same number. Numbers can be skipped, never reused.
 - **Where a line starts** is kept in annotated tags `metadata/line-<major>.<minor>`, with `baseline-run: <run number>` in their message. They are not code versions; do not delete or move them. The release run tags the next line; the first build after changing the major version tags `<major>.0`.
 - **Revision**: GitHub's API tells whether the same commit was built before in this line; if so, the build keeps that build number and the revision counts the earlier builds, re-runs included. (Two runs of one commit at the very same time could get the same revision.) Pull request runs build a temporary merge commit, which is always new.
-- **Releases** are the exception: always the next build number, revision 0, even if the commit was built before. So a release is named with three numbers: tag `v1.1.57`, `WinHotCorner-Full-1.1.57-setup.exe`, and `1.1.57` in Installed apps. A release run cannot be re-run (start a new one, which gets a new number), and a commit cannot be released twice. The release is created as a draft, checked, and only then published, so a failed run never leaves an empty release.
+- **Releases** are the exception: always the next build number, even if the commit was built before, and named with three numbers: tag `v1.1.57`, `WinHotCorner-Full-1.1.57-setup.exe`, and `1.1.57` in Installed apps. If a release run fails for reasons other than the code (a download, GitHub itself) it is re-run: the build number stays, the revision counts the attempts (the files say `1.1.57.1`), and the release notes say why the earlier attempts failed. A commit cannot be released twice.
 - **Local builds** are always `<major>.<minor>.0.0`: anyone can build locally, so a local build cannot have a number that only ever grows, and 0 never appears in an official build. A local build is older than any CI build of its line, so installing the *Full* installer of a local build over a CI build leaves the hot corner as it is (uninstall it first, or use *HotCornerOnly*, which always installs).
 
 The four numbers are the file and assembly version (Windows allows at most 65535 for each; the build stops if one is larger). The product version string and Installed apps add where a build comes from:
@@ -155,7 +155,19 @@ installer\build.ps1
 
 It builds the hot corner, publishes the control panel and writes both installers to `installer\Output`. It needs git, for the version.
 
-GitHub Actions (`.github/workflows/build.yml`) builds both installers on every push and pull request; they can be downloaded from the run. Running the workflow by hand on `main` with *Publish a release* ticked publishes a release.
+GitHub Actions (`.github/workflows/build.yml`) builds both installers on every push and pull request; they can be downloaded from the run.
+
+### Releases
+
+`main` only takes pull requests whose build passed, and **every push to `main`, i.e. every merged pull request, is a release**, so `main` is always a released version. The release run:
+
+1. builds both installers as a release (see [Versions](#versions)),
+2. creates a draft release with both installers (nobody sees a draft, and GitHub creates the `v` tag only when it is published), checks that both are there, and publishes it, so a failed run never leaves an empty release,
+3. tags the start of the next development line.
+
+The release notes are Markdown: the pull request's title (as a `##` heading) and description, then, after a line, why earlier attempts failed if the run was re-run (`Rev. 1:` â€¦), which installer to download, and a link to the changes since the previous release. Without a pull request, GitHub's generated notes take the place of the title and description.
+
+If a release run fails, re-run it. When an earlier attempt had already published the release, a re-run only finishes the remaining steps. When a run can no longer be re-run (after 30 days), running the workflow by hand on `main` releases the commit with a new build number.
 
 - **Version**: worked out by `installer\version.ps1`, see [Versions](#versions). A local build is always `<major>.<minor>.0.0`.
 - **Visual Studio** is not needed. The control panel needs Windows to build (WinUI's XAML compiler); the hot corner and ConfigManager also build on Linux or macOS with the .NET SDK, e.g. `dotnet build src/WinHotCorner/WinHotCorner.csproj`.

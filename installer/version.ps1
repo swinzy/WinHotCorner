@@ -4,11 +4,12 @@
 #   major     src\Directory.Build.props (VersionMajor), changed by hand
 #   minor     the development line of that major: metadata/line-<major>.<minor> tags
 #   build     GitHub Actions run number minus the line's baseline run (0 for local builds)
-#   revision  how many times this commit was built before in this line (0 for local builds and releases)
+#   revision  how many times this commit was built before in this line; for a release, how many times its
+#             run was re-run (0 for local builds)
 #
 # In GitHub Actions it can start the first line of a new major version, by pushing its metadata tag.
 param(
-    # Build a release: the next build of the line, revision 0 (GitHub Actions only)
+    # Build a release: the next build of the line, named with three numbers (GitHub Actions only)
     [switch]$Release
 )
 $ErrorActionPreference = 'Stop'
@@ -83,8 +84,11 @@ else {
 
     if ($Release) {
         if ($env:GITHUB_REF -ne 'refs/heads/main') { throw 'Releases are made from main only' }
-        if ($runAttempt -ne 1) { throw 'A release run cannot be re-run. Start a new release run instead (it gets a new build number).' }
         if (Invoke-Git tag --points-at HEAD --list 'v*') { throw 'This commit is already released' }
+        # A release is the line's next build even if CI built this commit before. A re-run of the release run
+        # (for reasons other than the code) keeps the build number and raises the revision; the release is still
+        # named with three numbers
+        $revision = $runAttempt - 1
     }
     elseif ($env:GITHUB_EVENT_NAME -ne 'pull_request') {
         # The same commit built before in this line keeps its build number; each rebuild raises the revision.
@@ -100,7 +104,7 @@ else {
         }
     }
 
-    # A re-run of this run is a rebuild too (releases cannot be re-run)
+    # A re-run of this run is a rebuild too (for a release it is already counted above)
     if (-not $Release) { $revision += $runAttempt - 1 }
 }
 
