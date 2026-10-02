@@ -165,7 +165,7 @@ GitHub Actions (`.github/workflows/build.yml`) builds both installers on every p
 2. creates a draft release with both installers (nobody sees a draft, and GitHub creates the `v` tag only when it is published), checks that both are there, and publishes it, so a failed run never leaves an empty release,
 3. tags the start of the next development line.
 
-The release notes are Markdown: the pull request's title (as a `##` heading) and description, then, after a line, why earlier attempts failed if the run was re-run (`Rev. 1:` …), which installer to download, and a link to the changes since the previous release. Without a pull request, GitHub's generated notes take the place of the title and description.
+The release notes are Markdown: the pull request's title (as a `##` heading) and description, then, after a line, why earlier attempts failed if the run was re-run (`Rev. 1:` …), a tip on which installer to download, and a link to the changes since the previous release. Without a pull request, GitHub's generated notes take the place of the title and description.
 
 If a release run fails, re-run it. When an earlier attempt had already published the release, a re-run only finishes the remaining steps. When a run can no longer be re-run (after 30 days), running the workflow by hand on `main` releases the commit with a new build number.
 
