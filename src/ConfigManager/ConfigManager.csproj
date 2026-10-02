@@ -8,7 +8,13 @@
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <RootNamespace>WinHotCorner</RootNamespace>
     <AssemblyName>ConfigManager</AssemblyName>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <!-- Only the version attributes are generated (from Directory.Build.props), the rest is in AssemblyInfo.cs -->
+    <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
+    <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
+    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
+    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
+    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
+    <GenerateAssemblyCopyrightAttribute>false</GenerateAssemblyCopyrightAttribute>
     <Deterministic>true</Deterministic>
   </PropertyGroup>
 

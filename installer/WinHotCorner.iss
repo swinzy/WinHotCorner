@@ -1,11 +1,11 @@
-﻿; Installer for Hot Corner for Windows (Inno Setup 7)
+﻿; Installer for WinHotCorner (Inno Setup 7)
 ;
 ; Build the Release configuration first, then: ISCC.exe WinHotCorner.iss
 ;
 ; The hot corner is started at every logon by a scheduled task that runs it with the user's highest privileges,
 ; so it also works while an elevated window is in the foreground (UIPI), without a UAC prompt.
 
-#define AppName "Hot Corner for Windows"
+#define AppName "WinHotCorner"
 #define BinDir "..\src\WinHotCorner\bin\Release\net48"
 #define AppExe "WinHotCorner.exe"
 #define AppVersion GetVersionNumbersString(BinDir + "\" + AppExe)

@@ -19,23 +19,7 @@ using System.Runtime.InteropServices;
 // COM, set the ComVisible attribute to true on that type.
 [assembly: ComVisible(false)]
 
-#if NET5_0_OR_GREATER
-// The SDK adds this for "-windows" targets only when it generates the assembly info, which this project does not
-[assembly: System.Runtime.Versioning.SupportedOSPlatform("windows")]
-#endif
-
 // The following GUID is for the ID of the typelib if this project is exposed to COM
 [assembly: Guid("de05688d-75a2-4b2d-9621-f933054f118a")]
 
-// Version information for an assembly consists of the following four values:
-//
-//      Major Version
-//      Minor Version
-//      Build Number
-//      Revision
-//
-// You can specify all the values or you can default the Build and Revision Numbers
-// by using the '*' as shown below:
-// [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyFileVersion("1.0.0.0")]
+// Version: set for every project in src\Directory.Build.props (raised by installer\build.ps1)
