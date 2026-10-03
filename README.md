@@ -82,4 +82,4 @@ Errors are written to `%LOCALAPPDATA%\WinHotCorner\WinHotCorner.log`. Please att
 
 See the [technical notes](docs/technical.md): how a push is detected, configuration, startup, the installers and how to build.
 
-Planned work is in [TODO.md](TODO.md).
+Planned work is in [TODO.md](https://github.com/swinzy/WinHotCorner/blob/devel/TODO.md) (on the `devel` branch, where development happens).
