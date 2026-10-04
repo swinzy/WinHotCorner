@@ -62,6 +62,12 @@ GNOME's numbers are in logical pixels. The hot corner is per-monitor DPI aware (
 
 Windows has no public function to open Task View, so the hot corner sends Win+Tab with `SendInput` (`TaskView.cs`), as one uninterrupted sequence. If Windows accepts only part of it, the keys that went down are released, with an unassigned key (`0xE8`) tapped first so that a lone Win release does not open the Start menu.
 
+## Ripple
+
+When Task View opens, the corner plays GNOME's ripple (`Ripple.cs`, a port of GNOME Shell's `js/ui/ripples.js`): three quarter circles grow out of the corner and fade away within about 1.4 s, drawn in the `.ripple-box` style of GNOME's theme (white at 20 %, 52 logical pixels, with a soft edge). It is skipped when Windows animations are turned off (*Animation effects* in Settings).
+
+The ripple is a click-through layered window that never takes the focus or shows up in Task View. Task View covers ordinary topmost windows, though; only a window of a program with `uiAccess` stays above it. So for now the ripple plays under Task View and is mostly hidden by it; it becomes visible once signed builds run with `uiAccess` (see [TODO.md](../TODO.md)). The hot corner does not need to know which case it is in.
+
 ## Configuration
 
 Settings are DWORD values in `HKEY_CURRENT_USER\Software\WinHotCorner`, written by the control panel:
@@ -176,6 +182,6 @@ If a release run fails, re-run it. When an earlier attempt had already published
 
 ## References
 
-- GNOME Shell, [`js/ui/layout.js`](https://gitlab.gnome.org/GNOME/gnome-shell/-/blob/main/js/ui/layout.js): `LayoutManager._updateHotCorners`, `HotCorner`, `PressureBarrier`.
+- GNOME Shell, [`js/ui/layout.js`](https://gitlab.gnome.org/GNOME/gnome-shell/-/blob/main/js/ui/layout.js): `LayoutManager._updateHotCorners`, `HotCorner`, `PressureBarrier`; [`js/ui/ripples.js`](https://gitlab.gnome.org/GNOME/gnome-shell/-/blob/main/js/ui/ripples.js) and the `.ripple-box` style: the ripple.
 - mutter, [`src/backends/native/meta-barrier-native.c`](https://gitlab.gnome.org/GNOME/mutter/-/blob/main/src/backends/native/meta-barrier-native.c): when a barrier counts as hit and left (the 2 px hit box).
 - [LowLevelMouseProc](https://learn.microsoft.com/windows/win32/winmsg/lowlevelmouseproc), [SendInput](https://learn.microsoft.com/windows/win32/api/winuser/nf-winuser-sendinput), [RegNotifyChangeKeyValue](https://learn.microsoft.com/windows/win32/api/winreg/nf-winreg-regnotifychangekeyvalue).

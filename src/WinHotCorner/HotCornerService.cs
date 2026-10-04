@@ -53,6 +53,7 @@ namespace WinHotCorner
         private readonly MouseHook _hook = new MouseHook();
         private readonly Timer _watchdog = new Timer { Interval = WATCHDOG_INTERVAL };
         private MessageWindow _window;
+        private Ripple _ripple;
         private List<CornerPressure> _corners = new List<CornerPressure>();
 
         /// <summary>
@@ -81,6 +82,7 @@ namespace WinHotCorner
         public bool Start()
         {
             _window = new MessageWindow(this);
+            _ripple = new Ripple();
 
             // Watch before loading, so a change made in between is not missed
             WatchConfiguration();
@@ -108,6 +110,7 @@ namespace WinHotCorner
             _exitEvent?.Dispose();
             _userWatcher?.Dispose();
             _policyWatcher?.Dispose();
+            _ripple?.Dispose();
             _window?.DestroyHandle();
         }
 
@@ -235,7 +238,17 @@ namespace WinHotCorner
                 return;
             }
 
-            TaskView.Open();
+            if (!TaskView.Open())
+                return;
+
+            foreach (CornerPressure corner in _corners)
+            {
+                if (corner.Corner.Monitor == monitor)
+                {
+                    _ripple.Play(corner.Corner);
+                    break;
+                }
+            }
         }
 
         /// <summary>
