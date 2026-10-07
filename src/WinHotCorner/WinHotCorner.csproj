@@ -27,6 +27,24 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
 
+  <!-- -p:UIAccess=true builds the uiAccess version (see "Startup and privileges" in docs\technical.md): the same
+       program, but its manifest asks for uiAccess, so it does not start at all unless it is signed by a trusted
+       certificate and installed in a protected folder. Built into its own folders, next to the usual version -->
+  <PropertyGroup Condition=" '$(UIAccess)' == 'true' ">
+    <BaseOutputPath>bin\UIAccess\</BaseOutputPath>
+    <IntermediateOutputPath>obj\UIAccess\$(Configuration)\</IntermediateOutputPath>
+    <ApplicationManifest>$(IntermediateOutputPath)app.manifest</ApplicationManifest>
+  </PropertyGroup>
+
+  <Target Name="WriteUIAccessManifest" AfterTargets="PrepareForBuild" Condition=" '$(UIAccess)' == 'true' ">
+    <PropertyGroup>
+      <_Manifest>$([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)\app.manifest'))</_Manifest>
+      <_UIAccessManifest>$(_Manifest.Replace('uiAccess="false"', 'uiAccess="true"'))</_UIAccessManifest>
+    </PropertyGroup>
+    <Error Condition=" '$(_UIAccessManifest)' == '$(_Manifest)' " Text="app.manifest has no uiAccess=&quot;false&quot; to change" />
+    <WriteLinesToFile File="$(ApplicationManifest)" Lines="$([MSBuild]::Escape($(_UIAccessManifest)))" Overwrite="true" WriteOnlyWhenDifferent="true" />
+  </Target>
+
   <ItemGroup>
     <ProjectReference Include="..\ConfigManager\ConfigManager.csproj" />
   </ItemGroup>

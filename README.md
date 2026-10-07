@@ -47,6 +47,8 @@ You never need both: *Full* already contains the hot corner. If you installed *H
 
 The hot corner starts right away and from then on whenever you sign in. In *Installed apps* the two parts appear as *WinHotCorner* and *WinHotCorner Control Panel*.
 
+Setup asks whether to **sign WinHotCorner on this computer** (off by default). Signed, it runs without administrator rights, also works with administrator windows in front on standard accounts, and its ripple shows above Task View. Setup makes a certificate on your computer that can sign nothing else, because its private key is deleted right after signing; see the [technical notes](docs/technical.md#startup-and-privileges). To change your mind, run Setup again; uninstalling removes the certificate.
+
 The installers are not signed yet, so Windows may show a SmartScreen warning: choose *More info* → *Run anyway*.
 
 **Requirements**: Windows 10 version 1903 or later, or Windows 11; 64-bit.
@@ -76,7 +78,7 @@ A corner with another screen next to it works because Windows holds the pointer 
 ## Troubleshooting
 
 **It does not trigger while Task Manager or another app running as administrator is in front.**
-WinHotCorner runs with your highest privileges so that this works. On a standard (non-administrator) account it cannot, because Windows does not let normal programs control administrator windows.
+WinHotCorner runs with your highest privileges so that this works. On a standard (non-administrator) account it cannot, because Windows does not let normal programs control administrator windows, unless you let Setup sign it on your computer.
 
 **Something else is wrong.**
 Errors are written to `%LOCALAPPDATA%\WinHotCorner\WinHotCorner.log`. Please attach it to an [issue](https://github.com/swinzy/WinHotCorner/issues).

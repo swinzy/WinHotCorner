@@ -41,6 +41,8 @@
                     <TextBlock x:Name="StatusText" Style="{StaticResource CardDescriptionStyle}" />
                 </StackPanel>
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                    <Button x:Name="RunNowButton" Content="Run now" VerticalAlignment="Center" Visibility="Collapsed"
+                            Click="RunNowButton_Click" />
                     <TextBlock x:Name="EnabledState" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
                     <ToggleSwitch x:Name="EnabledSwitch" Style="{StaticResource CardToggleSwitchStyle}"
                                   AutomationProperties.Name="Hot corner" Toggled="EnabledSwitch_Toggled" />

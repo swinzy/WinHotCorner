@@ -134,6 +134,7 @@ public sealed partial class MainWindow : Window
             StatusText.Text = HotCornerControl.IsRunning() ? "" : "Not running";
 
         StatusText.Visibility = StatusText.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+        RunNowButton.Visibility = StatusText.Text == "Not running" ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void EnabledSwitch_Toggled(object sender, RoutedEventArgs e)
@@ -161,6 +162,14 @@ public sealed partial class MainWindow : Window
             return;
         _config.Screens = screens;
         ConfigManager.SetUserValue(nameof(Configuration.Screens), (int)screens);
+    }
+
+    private async void RunNowButton_Click(object sender, RoutedEventArgs e)
+    {
+        RunNowButton.IsEnabled = false;
+        await Task.Run(StartHotCorner);
+        RunNowButton.IsEnabled = true;
+        UpdateStatus();
     }
 
     private void FullscreenSwitch_Toggled(object sender, RoutedEventArgs e)
@@ -206,7 +215,8 @@ public sealed partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Starts the hot corner the way it starts at logon: through its scheduled task, with the user's highest privileges
+    /// Starts the hot corner the way it starts at logon: through its scheduled task, with the user's highest privileges,
+    /// or, where it was installed signed for uiAccess (no task), as the Run key starts it
     /// </summary>
     private static void StartHotCorner()
     {
@@ -226,9 +236,17 @@ public sealed partial class MainWindow : Window
             // Fall back to starting it directly
         }
 
-        // No usable task: start it directly. It then runs without elevation until the next logon,
-        // so it does not trigger while an elevated window is in the foreground
-        if (File.Exists(HotCornerExe))
-            Process.Start(new ProcessStartInfo(HotCornerExe) { UseShellExecute = true });
+        // No usable task: start it directly, through ShellExecute, which grants the signed version its uiAccess.
+        // The usual version then runs without elevation until the next logon, so it does not trigger while an
+        // elevated window is in the foreground
+        try
+        {
+            if (File.Exists(HotCornerExe))
+                Process.Start(new ProcessStartInfo(HotCornerExe) { UseShellExecute = true });
+        }
+        catch (Exception)
+        {
+            // The status line keeps saying that it is not running
+        }
     }
 }

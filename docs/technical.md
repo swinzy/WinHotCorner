@@ -20,7 +20,7 @@ How WinHotCorner works, how it is configured and started, and how to build it.
 | `src/WinHotCorner` | The hot corner, `WinHotCorner.exe`. .NET Framework 4.8 (comes with Windows 10 1903 and later), no third-party dependencies. No visible window: a hidden window receives display changes, and the program runs as long as the user is signed in. |
 | `src/ConfigManager` | Shared library: reads and writes the settings, and the names both programs use to talk to each other (`HotCornerControl`). Built for `net48` and `net10.0-windows`. |
 | `src/ControlPanel` | WinHotCorner Control Panel, `WinHotCornerControlPanel.exe`. WinUI 3, unpackaged and self-contained. Optional: the hot corner works without it. |
-| `installer` | Inno Setup scripts for both installers, and `build.ps1`. |
+| `installer` | Inno Setup scripts for both installers, `build.ps1`, and `uiaccess.ps1`, which signs the hot corner on the user's computer (see [Startup and privileges](#startup-and-privileges)). |
 
 Despite the old name "service worker", the hot corner is not a Windows service: services run in session 0 and cannot see the user's mouse. It is a normal program in the user's session.
 
@@ -68,7 +68,7 @@ Windows has no public function to open Task View, so the hot corner sends Win+Ta
 
 When Task View opens, the corner plays GNOME's ripple (`Ripple.cs`, a port of GNOME Shell's `js/ui/ripples.js`): three quarter circles grow out of the corner and fade away within about 1.4 s, drawn in the `.ripple-box` style of GNOME's theme (white at 20 %, 52 logical pixels, with a soft edge). It is skipped when Windows animations are turned off (*Animation effects* in Settings).
 
-The ripple is a click-through layered window that never takes the focus or shows up in Task View. Task View covers ordinary topmost windows, though; only a window of a program with `uiAccess` stays above it. So for now the ripple plays under Task View and is mostly hidden by it; it becomes visible once the hot corner can run with `uiAccess` (see [TODO.md](../TODO.md)). The hot corner does not need to know which case it is in.
+The ripple is a click-through layered window that never takes the focus or shows up in Task View. Task View covers ordinary topmost windows, though; only a window of a program with `uiAccess` stays above it. So the ripple shows above Task View only when the hot corner was installed signed for `uiAccess` (see [Startup and privileges](#startup-and-privileges)); otherwise it plays under Task View and is mostly hidden by it. The hot corner does not need to know which case it is in.
 
 ## Configuration
 
@@ -94,15 +94,28 @@ Errors are appended to `%LOCALAPPDATA%\WinHotCorner\WinHotCorner.log` (moved to 
 
 ## Startup and privileges
 
-The installer registers a scheduled task, `WinHotCorner`, that starts the hot corner at every user's sign-in:
+Windows does not let a normal program send input to, or see the mouse over, an elevated window (UIPI). There are two ways around that, and the installer offers both: it asks before installing whether to sign WinHotCorner on this computer (the `uiaccess` task, off by default). Only the chosen version is installed.
 
-- It runs as that user with their highest privileges (`BUILTIN\Users`, `HighestAvailable`). Windows does not let a normal program send input to, or see the mouse over, an elevated window (UIPI), so for administrators the hot corner runs elevated, without a UAC prompt, and also works with Task Manager in front. Standard users get it with their normal rights.
+**Usually: elevated, from a scheduled task.** The installer registers a scheduled task, `WinHotCorner`, that starts the hot corner at every user's sign-in:
+
+- It runs as that user with their highest privileges (`BUILTIN\Users`, `HighestAvailable`), so for administrators the hot corner runs elevated, without a UAC prompt, and also works with Task Manager in front. Standard users get it with their normal rights, so for them it does not trigger in front of elevated windows.
 - No time limit, not stopped on battery, normal priority (the task default is below normal), restarted if it fails.
 - Users may read and run the task, so the unelevated control panel can start the hot corner the same way.
 
-Because it runs elevated at every sign-in, it must live where only administrators can write: the install folder is fixed to `Program Files\WinHotCorner`.
+**Signed: `uiAccess`, from the Run key.** A program whose manifest asks for `uiAccess` may send input to and stay above any window, elevated ones and Task View included, without being elevated itself, so it also works for standard users and its ripple shows above Task View. Windows starts such a program only if it is signed by a trusted certificate and installed in a protected folder such as Program Files; otherwise it does not start at all. The manifest is part of the program, so this is a second build of the hot corner (`-p:UIAccess=true`, built into `bin\UIAccess`).
 
-`uiAccess` (which would allow the same without elevation) is not used: it needs a trusted code signing certificate, and an unsigned `uiAccess` program does not start at all.
+The project has no certificate from a certificate authority, so the installer makes one on the user's computer (`installer\uiaccess.ps1`, run elevated):
+
+1. It makes a self-signed certificate for code signing only, adds it to the computer's trusted root certificates, signs the hot corner with it and deletes the private key straight away. Without the key nothing else can ever be signed with that certificate, so trusting it trusts only this one file. A certificate shared by all users would not do: a trusted root covers everything its key signs, and a self-signed certificate cannot be revoked if the key leaks.
+2. The signing happens in Setup's temporary folder, which only administrators can change, before anything is installed: if it fails, Setup stops and the installed hot corner stays as it was.
+3. The signature has no timestamp, so it is valid only while the certificate is; the certificate lasts 100 years.
+4. Every update replaces the program, so it is signed again with a new certificate, and the old one is removed. Switching back (running Setup again without the task) and uninstalling remove the certificate too, so none is left behind.
+
+Task Scheduler cannot start a `uiAccess` program (error 740), but Explorer starts the entries of the `Run` key through `ShellExecute`, which grants `uiAccess`: the installer adds `WinHotCorner` to `HKEY_LOCAL_MACHINE\...\CurrentVersion\Run` instead of the task. Unlike the task, nothing restarts the hot corner if it crashes; the control panel then shows that it is not running and offers to run it. Users can also turn it off in Task Manager's startup apps.
+
+Either way it starts at every sign-in, and the hot corner turns itself off at once when `Enabled` is 0: turning the hot corner off in the control panel also keeps it from running at sign-in.
+
+The hot corner logs at startup whether it is elevated and whether it has `uiAccess`. Because it can run elevated at every sign-in, it must live where only administrators can write: the install folder is fixed to `Program Files\WinHotCorner`.
 
 Only one hot corner runs per session (a named mutex).
 
@@ -112,7 +125,7 @@ Only one hot corner runs per session (a named mutex).
 
 - `MUTEX_NAME`: held by the running hot corner. `IsRunning()` checks it; *access denied* also means it is running (the hot corner is elevated, the control panel is not).
 - `EXIT_EVENT_NAME`: setting this event asks the hot corner to exit (`RequestExit()`). The hot corner creates it with access for the current user, otherwise its unelevated programs could not open it.
-- `TASK_NAME`: the scheduled task. Turning the hot corner on in the control panel writes `Enabled = 1` and runs the task, so it starts elevated; if the task cannot be run, the exe is started directly (not elevated). Turning it off just writes `Enabled = 0`.
+- `TASK_NAME`: the scheduled task. Turning the hot corner on in the control panel writes `Enabled = 1` and runs the task, so it starts elevated. Without a task (signed for `uiAccess`, or the task is gone) it starts the exe through `ShellExecute`, which grants `uiAccess` to the signed version; the usual version then runs without elevation until the next sign-in. Turning it off just writes `Enabled = 0`. *Run now* next to *Not running* starts it the same way.
 
 The control panel writes only the value that changed, so it never copies a Group Policy value into the user's settings.
 
@@ -120,8 +133,8 @@ The control panel writes only the value that changed, so it never copies a Group
 
 Both are Inno Setup 7 scripts in `installer`, published as two downloads:
 
-- `WinHotCorner.iss` builds **`WinHotCorner-HotCornerOnly-<version>-setup.exe`**: the hot corner. Installs to `Program Files\WinHotCorner`, registers the scheduled task and starts it. Before installing, upgrading or uninstalling it stops the hot corner in every session and waits until it has exited. Uninstalling keeps the user's settings.
-- `ControlPanel.iss` builds **`WinHotCorner-Full-<version>-setup.exe`**: the control panel, in `Program Files\WinHotCorner\ControlPanel`, with a Start menu shortcut. It contains the hot corner installer and runs it when the hot corner is missing or older, so it can install both. Each product has its own entry in Installed apps and can be uninstalled alone.
+- `WinHotCorner.iss` builds **`WinHotCorner-HotCornerOnly-<version>-setup.exe`**: the hot corner. Installs to `Program Files\WinHotCorner`, registers the scheduled task, or signs it and adds it to the Run key with the `uiaccess` task (see [Startup and privileges](#startup-and-privileges)), and starts it. Inno Setup remembers the task, so an update keeps the choice. Before installing, upgrading or uninstalling it stops the hot corner in every session and waits until it has exited. Uninstalling keeps the user's settings.
+- `ControlPanel.iss` builds **`WinHotCorner-Full-<version>-setup.exe`**: the control panel, in `Program Files\WinHotCorner\ControlPanel`, with a Start menu shortcut. It contains the hot corner installer and runs it silently when the hot corner is missing or older, so it can install both. It offers the same `uiaccess` task, starting from what the hot corner was installed with, passes the choice on (`/MERGETASKS`), and also runs the hot corner installer when the choice changes. A silent run without tasks on the command line keeps the hot corner's choice. Each product has its own entry in Installed apps and can be uninstalled alone.
 
 ## Versions
 

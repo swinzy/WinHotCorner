@@ -2,11 +2,15 @@
 ;
 ; Build the Release configuration first, then: ISCC.exe WinHotCorner.iss
 ;
-; The hot corner is started at every logon by a scheduled task that runs it with the user's highest privileges,
-; so it also works while an elevated window is in the foreground (UIPI), without a UAC prompt.
+; The hot corner is started at every logon in one of two ways (see "Startup and privileges" in docs\technical.md):
+; - usually by a scheduled task that runs it with the user's highest privileges, so it also works while an elevated
+;   window is in the foreground (UIPI), without a UAC prompt;
+; - with the uiaccess task: its uiAccess version, signed here with a certificate made on this computer, from the Run
+;   key. Only the chosen version is installed.
 
 #define AppName "WinHotCorner"
 #define BinDir "..\src\WinHotCorner\bin\Release\net48"
+#define UIAccessBinDir "..\src\WinHotCorner\bin\UIAccess\Release\net48"
 #define AppExe "WinHotCorner.exe"
 ; The numeric version of the built exe; build.ps1 passes the version to show (AppVersion) and to put in the file
 ; name (FileNameVersion), see "Versions" in docs\technical.md
@@ -18,6 +22,7 @@
   #define FileNameVersion NumericVersion
 #endif
 #define TaskName "WinHotCorner"
+#define RunKey "Software\Microsoft\Windows\CurrentVersion\Run"
 
 [Setup]
 AppId={{1F9F1765-5178-4A09-9EA9-34E77B75CC21}
@@ -48,14 +53,39 @@ SolidCompression=yes
 ; Stopping the running hot corner is done in the code below
 CloseApplications=no
 
+[Tasks]
+Name: "uiaccess"; Description: "Sign WinHotCorner on this computer"; Flags: unchecked
+
 [Files]
-Source: "{#BinDir}\{#AppExe}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#BinDir}\{#AppExe}"; DestDir: "{app}"; Flags: ignoreversion; Tasks: not uiaccess
+; The uiAccess version is signed in the temporary folder before anything is installed (PrepareToInstall), then
+; installed from there
+Source: "{#UIAccessBinDir}\{#AppExe}"; DestName: "WinHotCorner.uiaccess.exe"; Flags: dontcopy
+Source: "{tmp}\WinHotCorner.uiaccess.exe"; DestDir: "{app}"; DestName: "{#AppExe}"; Flags: external ignoreversion; Tasks: uiaccess
 Source: "{#BinDir}\{#AppExe}.config"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#BinDir}\ConfigManager.dll"; DestDir: "{app}"; Flags: ignoreversion
+; Also kept installed in either case: switching back or uninstalling removes the certificates with it
+Source: "uiaccess.ps1"; DestDir: "{app}"; Flags: ignoreversion
+
+[Registry]
+; Explorer starts Run entries through ShellExecute, which grants uiAccess (Task Scheduler cannot start such a program)
+Root: HKLM; Subkey: "{#RunKey}"; ValueType: string; ValueName: "{#AppName}"; ValueData: """{app}\{#AppExe}"""; Flags: uninsdeletevalue; Tasks: uiaccess
 
 [Code]
 const
   NetFx48Release = 528040;
+
+var
+  // The certificate made for this installation, until it is installed
+  NewThumbprint: String;
+  Installed: Boolean;
+
+#include "UIAccessNote.iss"
+
+procedure InitializeWizard();
+begin
+  AddUIAccessNote();
+end;
 
 function InitializeSetup(): Boolean;
 var
@@ -75,6 +105,63 @@ begin
   Exec(FileName, Params, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
 end;
 
+function PowerShell(): String;
+begin
+  Result := ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe');
+end;
+
+// A PowerShell single-quoted string
+function Quoted(const S: String): String;
+begin
+  Result := S;
+  StringChangeEx(Result, '''', '''''', True);
+  Result := '''' + Result + '''';
+end;
+
+// Runs uiaccess.ps1 and logs what it prints. Run as a script block, so no execution policy can stop it
+function RunUIAccessScript(const Script, Params: String; var Output: TArrayOfString): Boolean;
+var
+  ExecOutput: TExecOutput;
+  ResultCode, I: Integer;
+begin
+  Result := ExecAndCaptureOutput(PowerShell(),
+    '-NoProfile -NonInteractive -Command "& ([scriptblock]::Create([IO.File]::ReadAllText(' + Quoted(Script) + '))) ' + Params + '"',
+    '', SW_HIDE, ewWaitUntilTerminated, ResultCode, ExecOutput) and (ResultCode = 0);
+  for I := 0 to GetArrayLength(ExecOutput.StdOut) - 1 do
+    Log('uiaccess.ps1: ' + ExecOutput.StdOut[I]);
+  for I := 0 to GetArrayLength(ExecOutput.StdErr) - 1 do
+    Log('uiaccess.ps1 error: ' + ExecOutput.StdErr[I]);
+  Log(Format('uiaccess.ps1 %s: exit code %d', [Params, ResultCode]));
+  Output := ExecOutput.StdOut;
+end;
+
+// Signs the uiAccess version in the temporary folder, which only administrators can change
+function SignHotCorner(): Boolean;
+var
+  Output: TArrayOfString;
+  I: Integer;
+begin
+  ExtractTemporaryFile('uiaccess.ps1');
+  ExtractTemporaryFile('WinHotCorner.uiaccess.exe');
+  Result := RunUIAccessScript(ExpandConstant('{tmp}\uiaccess.ps1'),
+    '-Sign ' + Quoted(ExpandConstant('{tmp}\WinHotCorner.uiaccess.exe')), Output);
+  if Result then
+    for I := 0 to GetArrayLength(Output) - 1 do
+      if Pos('Thumbprint=', Output[I]) = 1 then
+        NewThumbprint := Copy(Output[I], Length('Thumbprint=') + 1, MaxInt);
+  Result := Result and (NewThumbprint <> '');
+end;
+
+// Removes the certificates made for earlier installations, all of them if Keep is empty
+procedure RemoveCertificates(const Keep: String);
+var
+  Output: TArrayOfString;
+begin
+  if not RunUIAccessScript(ExpandConstant('{app}\uiaccess.ps1'), '-Remove -Keep ' + Quoted(Keep), Output) then
+    SuppressibleMsgBox('Could not remove the certificate that {#AppName} made on this computer before. ' +
+      'It is named "WinHotCorner (made on this computer)" in Trusted Root Certification Authorities.', mbError, MB_OK, IDOK);
+end;
+
 // Stops the hot corner in every session and waits until it is gone, so its files can be replaced or deleted
 // (taskkill returns before the process has exited). Also stops the portable versions from before the installer
 // (WinHotCornerService.exe): they hold the same single-instance mutex and would keep the new one from starting
@@ -87,8 +174,14 @@ end;
 
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 begin
-  StopHotCorner();
   Result := '';
+  // Before anything changes, so a failure leaves the installed hot corner as it was
+  if WizardIsTaskSelected('uiaccess') and not SignHotCorner() then
+  begin
+    Result := 'Could not sign {#AppName} on this computer, so nothing was changed. Run Setup again without signing it.';
+    Exit;
+  end;
+  StopHotCorner();
 end;
 
 function XmlEscape(const S: String): String;
@@ -185,9 +278,38 @@ begin
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
+var
+  ResultCode: Integer;
 begin
-  if CurStep = ssPostInstall then
+  if CurStep <> ssPostInstall then
+    Exit;
+
+  if WizardIsTaskSelected('uiaccess') then
+  begin
+    // Started from the Run key from now on
+    RunHidden(ExpandConstant('{sys}\schtasks.exe'), '/Delete /TN "{#TaskName}" /F');
+    RemoveCertificates(NewThumbprint);
+    Installed := True;
+    // Start it now as well, through ShellExecute for uiAccess
+    if not ShellExecAsOriginalUser('', ExpandConstant('{app}\{#AppExe}'), '', ExpandConstant('{app}'), SW_SHOWNORMAL,
+        ewNoWait, ResultCode) then
+      Log(Format('Could not start the hot corner: %d', [ResultCode]));
+  end
+  else
+  begin
+    RegDeleteValue(HKLM, '{#RunKey}', '{#AppName}');
+    RemoveCertificates('');
     RegisterTask();
+  end;
+end;
+
+// A certificate made for an installation that did not finish is not needed
+procedure DeinitializeSetup();
+var
+  Output: TArrayOfString;
+begin
+  if (NewThumbprint <> '') and not Installed then
+    RunUIAccessScript(ExpandConstant('{tmp}\uiaccess.ps1'), '-Remove -Only ' + Quoted(NewThumbprint), Output);
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
@@ -197,5 +319,6 @@ begin
     // Remove the task first, so nothing starts the hot corner again while it is being stopped
     RunHidden(ExpandConstant('{sys}\schtasks.exe'), '/Delete /TN "{#TaskName}" /F');
     StopHotCorner();
+    RemoveCertificates('');
   end;
 end;

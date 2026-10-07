@@ -28,6 +28,7 @@ $innoDefines = @("/DAppVersion=$($version.Display)", "/DFileNameVersion=$($versi
 Remove-Item -Recurse -Force $output -ErrorAction SilentlyContinue
 
 Invoke-Checked 'Building the hot corner' { dotnet build (Join-Path $root 'src\WinHotCorner\WinHotCorner.csproj') -c Release -nologo -v:q @versionProperties }
+Invoke-Checked 'Building the hot corner with uiAccess' { dotnet build (Join-Path $root 'src\WinHotCorner\WinHotCorner.csproj') -c Release -nologo -v:q -p:UIAccess=true @versionProperties }
 Invoke-Checked 'Publishing the control panel' { dotnet publish (Join-Path $root 'src\ControlPanel\ControlPanel.csproj') -c Release -nologo -v:q -o (Join-Path $output 'ControlPanel') @versionProperties }
 
 # The hot corner installer first: the control panel installer contains it

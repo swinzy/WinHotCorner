@@ -5,6 +5,9 @@
 ; Published as the "Full" installer: it contains the hot corner installer ("HotCornerOnly") and runs it when the
 ; hot corner is missing or older, so this one installer is enough to get both, and running it after HotCornerOnly
 ; only adds the control panel. Each keeps its own entry in Installed apps and can be uninstalled alone.
+;
+; It also offers the hot corner installer's uiaccess task, starting from what is installed, and runs the hot corner
+; installer when that choice changes too.
 
 #define AppName "WinHotCorner Control Panel"
 #define PublishDir "Output\ControlPanel"
@@ -48,6 +51,12 @@ WizardStyle=modern
 Compression=lzma2/max
 SolidCompression=yes
 CloseApplications=no
+; The task belongs to the hot corner installer: start from what it has, not from this installer's last run
+UsePreviousTasks=no
+
+[Tasks]
+; Same name and description as in WinHotCorner.iss
+Name: "uiaccess"; Description: "Sign WinHotCorner on this computer"; Flags: unchecked
 
 [Files]
 Source: "{#PublishDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
@@ -60,6 +69,16 @@ Name: "{autoprograms}\{#AppName}"; Filename: "{app}\{#AppExe}"
 Filename: "{app}\{#AppExe}"; Description: "Open {#AppName}"; Flags: nowait postinstall skipifsilent runasoriginaluser
 
 [Code]
+var
+  TasksPageShown: Boolean;
+
+#include "UIAccessNote.iss"
+
+procedure InitializeWizard();
+begin
+  AddUIAccessNote();
+end;
+
 procedure RunHidden(const FileName, Params: String);
 var
   ResultCode: Integer;
@@ -93,6 +112,46 @@ begin
     Result := Result + '.0';
 end;
 
+// True if the installed hot corner was installed with the uiaccess task
+function HotCornerHasUIAccess(): Boolean;
+var
+  Tasks: String;
+begin
+  Result := RegQueryStringValue(HKLM, 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{#HotCornerAppId}_is1',
+    'Inno Setup: Selected Tasks', Tasks) and (Pos(',uiaccess,', ',' + Lowercase(Tasks) + ',') > 0);
+end;
+
+// Tasks given on the command line
+function TasksOnCommandLine(): Boolean;
+var
+  I: Integer;
+begin
+  Result := False;
+  for I := 1 to ParamCount do
+    if (Pos('/TASKS=', Uppercase(ParamStr(I))) = 1) or (Pos('/MERGETASKS=', Uppercase(ParamStr(I))) = 1) then
+      Result := True;
+end;
+
+// Starts the page from what is installed (also called when silent), unless the command line says otherwise
+procedure CurPageChanged(CurPageID: Integer);
+begin
+  if (CurPageID = wpSelectTasks) and not TasksPageShown then
+  begin
+    TasksPageShown := True;
+    if HotCornerHasUIAccess() and not TasksOnCommandLine() then
+      WizardSelectTasks('uiaccess');
+  end;
+end;
+
+// A silent update without tasks on the command line keeps the hot corner as it is
+function WantsUIAccess(): Boolean;
+begin
+  if WizardSilent() and not TasksOnCommandLine() then
+    Result := HotCornerHasUIAccess()
+  else
+    Result := WizardIsTaskSelected('uiaccess');
+end;
+
 // True if the hot corner is not installed, or older than the one inside this installer
 function HotCornerNeedsInstall(): Boolean;
 var
@@ -112,16 +171,30 @@ end;
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 var
   ResultCode: Integer;
+  UIAccess: Boolean;
+  Tasks: String;
 begin
   Result := '';
   StopControlPanel();
 
-  if HotCornerNeedsInstall() then
+  UIAccess := WantsUIAccess();
+  Log(Format('Hot corner: needs install %d, signed for uiAccess %d, wanted %d', [Ord(HotCornerNeedsInstall()),
+    Ord(HotCornerHasUIAccess()), Ord(UIAccess)]));
+  if HotCornerNeedsInstall() or (UIAccess <> HotCornerHasUIAccess()) then
   begin
+    if UIAccess then
+      Tasks := 'uiaccess'
+    else
+      Tasks := '!uiaccess';
     ExtractTemporaryFile('{#HotCornerSetup}');
-    if not Exec(ExpandConstant('{tmp}\{#HotCornerSetup}'), '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART', '',
+    if not Exec(ExpandConstant('{tmp}\{#HotCornerSetup}'), '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /MERGETASKS="' + Tasks + '"', '',
         SW_HIDE, ewWaitUntilTerminated, ResultCode) or (ResultCode <> 0) then
+    begin
       Result := Format('Could not install WinHotCorner (exit code %d).', [ResultCode]);
+      // The hot corner installer stops in its own PrepareToInstall (exit code 7) when it cannot sign
+      if UIAccess and (ResultCode = 7) then
+        Result := 'Could not sign WinHotCorner on this computer, so nothing was changed. Run Setup again without signing it.';
+    end;
   end;
 end;
 

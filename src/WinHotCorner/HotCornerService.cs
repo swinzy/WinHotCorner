@@ -18,6 +18,12 @@ namespace WinHotCorner
         [DllImport("user32.dll")]
         private static extern bool PostMessage(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
 
+        [DllImport("advapi32.dll", SetLastError = true)]
+        private static extern bool GetTokenInformation(IntPtr token, int tokenInformationClass, out int information, int length, out int returnLength);
+
+        private const int TokenElevation = 20;
+        private const int TokenUIAccess = 26;
+
         /// <summary>
         /// How often the watchdog checks the mouse hook and the monitor layout, in milliseconds
         /// </summary>
@@ -98,8 +104,21 @@ namespace WinHotCorner
             _hook.Install();
             GetCursorPos(out _lastCursorPos);
             _watchdog.Start();
-            Log.Info("Started");
+            Log.Info($"Started (elevated: {HasToken(TokenElevation)}, uiAccess: {HasToken(TokenUIAccess)})");
             return true;
+        }
+
+        /// <summary>
+        /// Reads a yes/no property of this process's token, for the log
+        /// </summary>
+        private static string HasToken(int informationClass)
+        {
+            using (WindowsIdentity identity = WindowsIdentity.GetCurrent())
+            {
+                if (!GetTokenInformation(identity.Token, informationClass, out int value, sizeof(int), out _))
+                    return "unknown";
+                return value != 0 ? "yes" : "no";
+            }
         }
 
         public void Stop()
