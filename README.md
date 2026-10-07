@@ -24,7 +24,7 @@ Classic GNOME hot corner function for Windows!
 
 ## What it does
 
-Push the mouse pointer into the top-left corner of a screen and Task View opens, just like the Activities overview on GNOME. No keyboard needed.
+Push the mouse pointer into the top-left corner of a screen (top-right when Windows is in a right-to-left language, as on GNOME; the control panel can change that back) and Task View opens, just like the Activities overview on GNOME. No keyboard needed.
 
 It feels like GNOME too: the corner reacts to a deliberate push, not to the pointer just passing by, and it waits until you move away before it can trigger again.
 
@@ -71,7 +71,7 @@ Changes apply immediately. Without the control panel, the hot corner works with 
 
 ## Multiple screens
 
-As on GNOME, the primary screen has a hot corner, and so does every screen with no neighbour at its top left (no other screen directly to the left of its top-left corner or directly above it). The control panel's *Hot corner screens* can change this to the primary screen only, screens with no top-left neighbour only, or all screens.
+As on GNOME, the primary screen has a hot corner, and so does every screen with no neighbour at its top left (no other screen directly to the left of its top-left corner or directly above it; top right and to the right in a right-to-left language). The control panel's *Hot corner screens* can change this to the primary screen only, screens with no top-left neighbour only, or all screens.
 
 A corner with another screen next to it works because Windows holds the pointer there for a few pixels (its "sticky corners"): push into the very top of the edge. If you have turned sticky corners off (`MouseCornerClipLength` set to 0), or the screens are not aligned at the top, such a corner does not trigger.
 

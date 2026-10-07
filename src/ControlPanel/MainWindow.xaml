@@ -22,7 +22,7 @@
                         <TextBlock Text="WinHotCorner" Style="{StaticResource SubtitleTextBlockStyle}" />
                         <TextBlock Text="Control Panel" Style="{StaticResource TitleLargeTextBlockStyle}" />
                     </StackPanel>
-                    <Image Grid.Column="1" Source="ms-appx:///Assets/Logo.png" Width="160" Height="160"
+                    <Image Grid.Column="1" Source="ms-appx:///Assets/Logo.png" Width="160" Height="160" FlowDirection="LeftToRight"
                            AutomationProperties.AccessibilityView="Raw" />
                 </Grid>
 
@@ -77,6 +77,26 @@
                         <x:String>Primary screen and screens with no top left neighbours</x:String>
                         <x:String>All screens</x:String>
                     </ComboBox>
+                </Grid>
+
+                <!-- Only when Windows' display language is written right to left -->
+                <Grid x:Name="RightToLeftCard" Style="{StaticResource CardStyle}" Visibility="Collapsed">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <FontIcon Glyph="&#xE8AB;" Style="{StaticResource CardIconStyle}" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="Mirror for right-to-left" />
+                        <TextBlock Text="Hot corner will trigger at top right corner in RTL languages"
+                                   Style="{StaticResource CardDescriptionStyle}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                        <TextBlock x:Name="RightToLeftState" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+                        <ToggleSwitch x:Name="RightToLeftSwitch" Style="{StaticResource CardToggleSwitchStyle}"
+                                      AutomationProperties.Name="Mirror for right-to-left" Toggled="RightToLeftSwitch_Toggled" />
+                    </StackPanel>
                 </Grid>
 
                 <Grid Style="{StaticResource CardStyle}">

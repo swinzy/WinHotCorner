@@ -21,6 +21,9 @@ namespace WinHotCorner
     /// GNOME's numbers are in logical pixels; they are scaled by the monitor's display scale here because the
     /// mouse hook reports physical pixels.
     ///
+    /// A top-right corner (right to left) works the same: positions are mirrored around the corner first, so its
+    /// right edge counts as the left one.
+    ///
     /// Where another monitor is beyond an edge, the pointer usually just moves on to it, but near the corner Windows
     /// may hold it for a few pixels (its sticky corners, MouseCornerClipLength). Whether it did shows only at the
     /// next event, so such a movement is kept until then and counts only if the pointer stayed.
@@ -98,8 +101,16 @@ namespace WinHotCorner
         /// <summary>
         /// Cheap check whether a pointer position could involve this corner at all
         /// </summary>
-        public bool IsNear(POINT pt) =>
-            pt.X < Corner.X + _edgeLength && pt.Y < Corner.Y + _edgeLength && (pt.X < Corner.X || pt.Y < Corner.Y);
+        public bool IsNear(POINT pt)
+        {
+            pt = Mirror(pt);
+            return pt.X < Corner.X + _edgeLength && pt.Y < Corner.Y + _edgeLength && (pt.X < Corner.X || pt.Y < Corner.Y);
+        }
+
+        /// <summary>
+        /// A position as if the corner were a top-left one: mirrored around it for a top-right corner
+        /// </summary>
+        private POINT Mirror(POINT pt) => Corner.RightToLeft ? new POINT { X = 2 * Corner.X - pt.X, Y = pt.Y } : pt;
 
         /// <summary>
         /// Handles one pointer movement
@@ -112,6 +123,9 @@ namespace WinHotCorner
         public bool OnMove(POINT prev, POINT pt, uint time, double threshold)
         {
             bool trigger = false;
+            POINT target = pt;
+            prev = Mirror(prev);
+            pt = Mirror(pt);
 
             // The pointer is now where the kept movement ended: it stayed if it is still on this side of both edges
             if (_pending.HasValue)
@@ -123,7 +137,7 @@ namespace WinHotCorner
             }
 
             bool outside = pt.X < Corner.X || pt.Y < Corner.Y;
-            if (outside && DisplayLayout.IsOnAnyMonitor(pt))
+            if (outside && DisplayLayout.IsOnAnyMonitor(target))
             {
                 _pending = new Move { Prev = prev, Pt = pt, Time = time };
                 return trigger;

@@ -277,7 +277,8 @@ namespace WinHotCorner
         /// </summary>
         private void UpdateCorners()
         {
-            List<HotCorner> corners = DisplayLayout.GetHotCorners(Configuration.Screens);
+            bool rightToLeft = Configuration.MirrorForRightToLeft && InterfaceDirection.IsRightToLeft();
+            List<HotCorner> corners = DisplayLayout.GetHotCorners(Configuration.Screens, rightToLeft);
 
             bool same = corners.Count == _corners.Count;
             for (int i = 0; same && i < corners.Count; i++)

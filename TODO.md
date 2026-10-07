@@ -9,7 +9,6 @@ Planned work and open questions. See [docs/technical.md](docs/technical.md) for 
 ## Hot corner
 
 - [ ] **Open Task View without simulating Win+Tab.** Windows has no public function for it. The shell namespace `shell:::{3080F90E-D7AD-11D9-BD98-0000947B0257}` ("Switch between windows") may open Task View; to check: whether it does on current Windows 11, how fast it is (it goes through `explorer.exe`), whether it also works with an elevated window in front.
-- [ ] **Right-to-left languages**: GNOME puts the hot corner in the top-right corner when the interface language is written right to left.
 
 ## Translations
 

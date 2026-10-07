@@ -17,6 +17,15 @@ public sealed partial class MainWindow : Window
     [DllImport("user32.dll")]
     private static extern uint GetDpiForWindow(IntPtr hwnd);
 
+    [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")]
+    private static extern IntPtr GetWindowLongPtr(IntPtr hwnd, int index);
+
+    [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")]
+    private static extern IntPtr SetWindowLongPtr(IntPtr hwnd, int index, IntPtr value);
+
+    private const int GWL_EXSTYLE = -20;
+    private const long WS_EX_LAYOUTRTL = 0x00400000;
+
     /// <summary>
     /// Initial window size, in logical pixels
     /// </summary>
@@ -35,6 +44,12 @@ public sealed partial class MainWindow : Window
         [HotCornerScreens.Primary, HotCornerScreens.Free, HotCornerScreens.PrimaryAndFree, HotCornerScreens.All];
 
     private readonly DispatcherQueueTimer _statusTimer;
+    private readonly bool _rightToLeft;
+
+    /// <summary>
+    /// The choices of <see cref="ScreensBox"/> as written in the XAML, for the top-left corner
+    /// </summary>
+    private readonly string[] _screenLabels;
     private Configuration _config = new();
     private ISet<string> _managed = new HashSet<string>();
 
@@ -46,12 +61,22 @@ public sealed partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        _screenLabels = new string[ScreensBox.Items.Count];
+        for (int i = 0; i < _screenLabels.Length; i++)
+            _screenLabels[i] = (string)ScreensBox.Items[i];
         AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "WHC.ico"));
         ResizeAndCenter();
 
         ShowState(EnabledSwitch, EnabledState);
         ShowState(FullscreenSwitch, FullscreenState);
         ShowState(MouseDownSwitch, MouseDownState);
+        ShowState(RightToLeftSwitch, RightToLeftState);
+
+        // Right to left, the hot corner can be the top-right one: the choice shows only then
+        _rightToLeft = InterfaceDirection.IsRightToLeft();
+        RightToLeftCard.Visibility = _rightToLeft ? Visibility.Visible : Visibility.Collapsed;
+        if (_rightToLeft)
+            MirrorWindow();
 
         ThresholdBox.Minimum = Configuration.MIN_PRESSURE_THRESHOLD;
         ThresholdBox.Maximum = Configuration.MAX_PRESSURE_THRESHOLD;
@@ -80,6 +105,18 @@ public sealed partial class MainWindow : Window
         toggle.Toggled += (sender, e) => state.Text = toggle.IsOn ? "On" : "Off";
     }
 
+    /// <summary>
+    /// Lays the window out right to left, as Windows' own apps are in a right-to-left display language: the title bar
+    /// (its buttons on the left) and the content. WinUI does not do this by itself
+    /// </summary>
+    private void MirrorWindow()
+    {
+        IntPtr hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+        long style = GetWindowLongPtr(hwnd, GWL_EXSTYLE).ToInt64();
+        SetWindowLongPtr(hwnd, GWL_EXSTYLE, new IntPtr(style | WS_EX_LAYOUTRTL));
+        ((FrameworkElement)Content).FlowDirection = FlowDirection.RightToLeft;
+    }
+
     private void ResizeAndCenter()
     {
         double scale = GetDpiForWindow(WinRT.Interop.WindowNative.GetWindowHandle(this)) / 96.0;
@@ -101,15 +138,18 @@ public sealed partial class MainWindow : Window
 
             EnabledSwitch.IsOn = _config.Enabled;
             EnabledSwitch.IsEnabled = installed && !_managed.Contains(nameof(Configuration.Enabled));
+            ShowScreenLabels();
             ScreensBox.SelectedIndex = Array.IndexOf(ScreenChoices, _config.Screens);
             ScreensBox.IsEnabled = !_managed.Contains(nameof(Configuration.Screens));
+            RightToLeftSwitch.IsOn = _config.MirrorForRightToLeft;
+            RightToLeftSwitch.IsEnabled = !_managed.Contains(nameof(Configuration.MirrorForRightToLeft));
             FullscreenSwitch.IsOn = _config.DisableWhenFullscreen;
             FullscreenSwitch.IsEnabled = !_managed.Contains(nameof(Configuration.DisableWhenFullscreen));
             MouseDownSwitch.IsOn = _config.DisableWhenMouseDown;
             MouseDownSwitch.IsEnabled = !_managed.Contains(nameof(Configuration.DisableWhenMouseDown));
             ThresholdBox.Value = _config.PressureThreshold;
             ThresholdBox.IsEnabled = !_managed.Contains(nameof(Configuration.PressureThreshold));
-            ResetButton.IsEnabled = ScreensBox.IsEnabled || FullscreenSwitch.IsEnabled || MouseDownSwitch.IsEnabled || ThresholdBox.IsEnabled;
+            ResetButton.IsEnabled = ScreensBox.IsEnabled || RightToLeftSwitch.IsEnabled || FullscreenSwitch.IsEnabled || MouseDownSwitch.IsEnabled || ThresholdBox.IsEnabled;
 
             NotInstalledInfo.IsOpen = !installed;
             PolicyInfo.IsOpen = _managed.Count > 0;
@@ -172,6 +212,35 @@ public sealed partial class MainWindow : Window
         UpdateStatus();
     }
 
+    private void RightToLeftSwitch_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (_loading)
+            return;
+        _config.MirrorForRightToLeft = RightToLeftSwitch.IsOn;
+        ConfigManager.SetUserValue(nameof(Configuration.MirrorForRightToLeft), _config.MirrorForRightToLeft ? 1 : 0);
+        ShowScreenLabels();
+    }
+
+    /// <summary>
+    /// Says top right instead of top left in the screen choices when the hot corner is the top-right one
+    /// </summary>
+    private void ShowScreenLabels()
+    {
+        bool topRight = _rightToLeft && _config.MirrorForRightToLeft;
+        // Replacing the selected item clears the selection: put it back, without writing it
+        bool loading = _loading;
+        _loading = true;
+        int selected = ScreensBox.SelectedIndex;
+        for (int i = 0; i < _screenLabels.Length; i++)
+        {
+            string label = topRight ? _screenLabels[i].Replace("top left", "top right") : _screenLabels[i];
+            if ((string)ScreensBox.Items[i] != label)
+                ScreensBox.Items[i] = label;
+        }
+        ScreensBox.SelectedIndex = selected;
+        _loading = loading;
+    }
+
     private void FullscreenSwitch_Toggled(object sender, RoutedEventArgs e)
     {
         if (!_loading)
@@ -208,6 +277,7 @@ public sealed partial class MainWindow : Window
     private void ResetButton_Click(object sender, RoutedEventArgs e)
     {
         ConfigManager.ClearUserValue(nameof(Configuration.Screens));
+        ConfigManager.ClearUserValue(nameof(Configuration.MirrorForRightToLeft));
         ConfigManager.ClearUserValue(nameof(Configuration.DisableWhenFullscreen));
         ConfigManager.ClearUserValue(nameof(Configuration.DisableWhenMouseDown));
         ConfigManager.ClearUserValue(nameof(Configuration.PressureThreshold));

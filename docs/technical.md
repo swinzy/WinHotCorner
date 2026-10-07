@@ -52,6 +52,8 @@ GNOME's numbers are in logical pixels. The hot corner is per-monitor DPI aware (
 
 `DisplayLayout.cs` lists the monitors and decides which corners count, by the *Hot corner screens* setting (`Screens`). A corner is covered when another monitor is directly to its left or above it: the pixel just left of the corner or the pixel just above it is on another monitor. This is GNOME's test. The default is GNOME's choice: the primary monitor's corner, and every corner that is not covered. The list is rebuilt on display, DPI and setting changes.
 
+When Windows' display language is written right to left (Arabic, Hebrew and others; `LOCALE_IREADINGLAYOUT` of the user's UI language, `InterfaceDirection` in ConfigManager), every corner is the top-right one instead, as on GNOME, which goes by its interface language. GNOME moves its Activities button to the top right then, but Windows has no top bar to follow, so `MirrorForRightToLeft` (on by default; the control panel shows it only in a right-to-left language) can keep the top-left corner. Covered then means another monitor directly to the right or above. GNOME's points for that test look wrong right to left (`monitor.x + 1` beside the corner, and one pixel too far right above it); WinHotCorner uses the pixels next to the corner. `CornerPressure` mirrors positions around a top-right corner, so the rules above apply with the right edge in place of the left one, and the ripple is mirrored too (GNOME's `.ripple-box:rtl`).
+
 GNOME stops the pointer at a covered primary corner with a pointer barrier. Windows has no pointer barriers, but it has *sticky corners*: at the ends of an edge shared by two monitors, it holds the pointer for a few pixels (`MouseCornerClipLength` in `HKEY_CURRENT_USER\Control Panel\Desktop`, 6 when not set, 0 turns it off). So with two monitors of the same height side by side, pushing left within the top few pixels of the right monitor's corner does not cross over. Measured on Windows 11 with the right monitor at 200%: the pointer was held at the top 6 rows every time, crossed at the 7th, and diagonal flicks into the corner were held too; the 6 are physical pixels. Meanwhile the hook reports points on the left monitor, so the hot corner only learns that the pointer was held at the next event (see above). Where Windows does not hold the pointer (the clip length is 0, the monitors are not aligned), a covered corner simply never triggers. The registry value is only logged: it may not be what is in effect, as Explorer reads it when it starts.
 
 ### When it does not trigger
@@ -78,6 +80,7 @@ Settings are DWORD values in `HKEY_CURRENT_USER\Software\WinHotCorner`, written 
 |---|---|---|---|
 | `Enabled` | 0 or 1 | 1 | 0 makes the hot corner exit, at startup or while running |
 | `PressureThreshold` | 10 to 1000 | 100 | Pressure needed to trigger, in logical pixels |
+| `MirrorForRightToLeft` | 0 or 1 | 1 | In a right-to-left display language, use the top-right corner (as GNOME) instead of the top-left one |
 | `Screens` | 0 to 3 | 0 | Which screens have a hot corner: 0 the primary screen and every screen whose corner is not covered (GNOME), 1 the primary screen only, 2 only screens whose corner is not covered, 3 all screens |
 | `DisableWhenFullscreen` | 0 or 1 | 1 | |
 | `DisableWhenMouseDown` | 0 or 1 | 1 | |
@@ -128,6 +131,8 @@ Only one hot corner runs per session (a named mutex).
 - `TASK_NAME`: the scheduled task. Turning the hot corner on in the control panel writes `Enabled = 1` and runs the task, so it starts elevated. Without a task (signed for `uiAccess`, or the task is gone) it starts the exe through `ShellExecute`, which grants `uiAccess` to the signed version; the usual version then runs without elevation until the next sign-in. Turning it off just writes `Enabled = 0`. *Run now* next to *Not running* starts it the same way.
 
 The control panel writes only the value that changed, so it never copies a Group Policy value into the user's settings.
+
+In a right-to-left display language the control panel is laid out right to left, as Windows' own apps are: WinUI does not do that by itself, so it sets `WS_EX_LAYOUTRTL` on the window (the title bar) and `FlowDirection` on the content; the logo keeps its direction.
 
 ## Installers
 
