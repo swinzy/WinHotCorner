@@ -28,6 +28,12 @@ public sealed partial class MainWindow : Window
     /// </summary>
     private static readonly string HotCornerExe = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "WinHotCorner.exe"));
 
+    /// <summary>
+    /// The choices in <see cref="ScreensBox"/>, in their order there
+    /// </summary>
+    private static readonly HotCornerScreens[] ScreenChoices =
+        [HotCornerScreens.Primary, HotCornerScreens.Free, HotCornerScreens.PrimaryAndFree, HotCornerScreens.All];
+
     private readonly DispatcherQueueTimer _statusTimer;
     private Configuration _config = new();
     private ISet<string> _managed = new HashSet<string>();
@@ -95,13 +101,15 @@ public sealed partial class MainWindow : Window
 
             EnabledSwitch.IsOn = _config.Enabled;
             EnabledSwitch.IsEnabled = installed && !_managed.Contains(nameof(Configuration.Enabled));
+            ScreensBox.SelectedIndex = Array.IndexOf(ScreenChoices, _config.Screens);
+            ScreensBox.IsEnabled = !_managed.Contains(nameof(Configuration.Screens));
             FullscreenSwitch.IsOn = _config.DisableWhenFullscreen;
             FullscreenSwitch.IsEnabled = !_managed.Contains(nameof(Configuration.DisableWhenFullscreen));
             MouseDownSwitch.IsOn = _config.DisableWhenMouseDown;
             MouseDownSwitch.IsEnabled = !_managed.Contains(nameof(Configuration.DisableWhenMouseDown));
             ThresholdBox.Value = _config.PressureThreshold;
             ThresholdBox.IsEnabled = !_managed.Contains(nameof(Configuration.PressureThreshold));
-            ResetButton.IsEnabled = FullscreenSwitch.IsEnabled || MouseDownSwitch.IsEnabled || ThresholdBox.IsEnabled;
+            ResetButton.IsEnabled = ScreensBox.IsEnabled || FullscreenSwitch.IsEnabled || MouseDownSwitch.IsEnabled || ThresholdBox.IsEnabled;
 
             NotInstalledInfo.IsOpen = !installed;
             PolicyInfo.IsOpen = _managed.Count > 0;
@@ -126,6 +134,7 @@ public sealed partial class MainWindow : Window
             StatusText.Text = HotCornerControl.IsRunning() ? "" : "Not running";
 
         StatusText.Visibility = StatusText.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+        RunNowButton.Visibility = StatusText.Text == "Not running" ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void EnabledSwitch_Toggled(object sender, RoutedEventArgs e)
@@ -139,6 +148,27 @@ public sealed partial class MainWindow : Window
         // Turning off needs nothing more: the hot corner sees the change and exits by itself
         if (_config.Enabled && !HotCornerControl.IsRunning())
             _ = Task.Run(StartHotCorner);
+        UpdateStatus();
+    }
+
+    private void ScreensBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_loading || ScreensBox.SelectedIndex < 0)
+            return;
+
+        // The selection made while loading can be reported only later, so compare instead of relying on _loading
+        HotCornerScreens screens = ScreenChoices[ScreensBox.SelectedIndex];
+        if (screens == _config.Screens)
+            return;
+        _config.Screens = screens;
+        ConfigManager.SetUserValue(nameof(Configuration.Screens), (int)screens);
+    }
+
+    private async void RunNowButton_Click(object sender, RoutedEventArgs e)
+    {
+        RunNowButton.IsEnabled = false;
+        await Task.Run(StartHotCorner);
+        RunNowButton.IsEnabled = true;
         UpdateStatus();
     }
 
@@ -177,6 +207,7 @@ public sealed partial class MainWindow : Window
 
     private void ResetButton_Click(object sender, RoutedEventArgs e)
     {
+        ConfigManager.ClearUserValue(nameof(Configuration.Screens));
         ConfigManager.ClearUserValue(nameof(Configuration.DisableWhenFullscreen));
         ConfigManager.ClearUserValue(nameof(Configuration.DisableWhenMouseDown));
         ConfigManager.ClearUserValue(nameof(Configuration.PressureThreshold));
@@ -184,7 +215,8 @@ public sealed partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Starts the hot corner the way it starts at logon: through its scheduled task, with the user's highest privileges
+    /// Starts the hot corner the way it starts at logon: through its scheduled task, with the user's highest privileges,
+    /// or, where it was installed signed for uiAccess (no task), as the Run key starts it
     /// </summary>
     private static void StartHotCorner()
     {
@@ -204,9 +236,17 @@ public sealed partial class MainWindow : Window
             // Fall back to starting it directly
         }
 
-        // No usable task: start it directly. It then runs without elevation until the next logon,
-        // so it does not trigger while an elevated window is in the foreground
-        if (File.Exists(HotCornerExe))
-            Process.Start(new ProcessStartInfo(HotCornerExe) { UseShellExecute = true });
+        // No usable task: start it directly, through ShellExecute, which grants the signed version its uiAccess.
+        // The usual version then runs without elevation until the next logon, so it does not trigger while an
+        // elevated window is in the foreground
+        try
+        {
+            if (File.Exists(HotCornerExe))
+                Process.Start(new ProcessStartInfo(HotCornerExe) { UseShellExecute = true });
+        }
+        catch (Exception)
+        {
+            // The status line keeps saying that it is not running
+        }
     }
 }

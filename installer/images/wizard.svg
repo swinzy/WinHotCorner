@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The large wizard image (welcome and finished pages): the logo's corner, ripple and pointer on a tall panel.
+     Rendered to the PNGs next to it with: magick -background none -density <dpi> wizard.svg wizard-<w>.png -->
+<svg xmlns="http://www.w3.org/2000/svg" width="164" height="314" viewBox="0 0 164 314">
+  <defs>
+    <linearGradient id="screen" x1="0" y1="0" x2="164" y2="314" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2e2e2e" />
+      <stop offset="1" stop-color="#1a1a1a" />
+    </linearGradient>
+    <!-- The logo's pointer gradient, in the logo's own units -->
+    <linearGradient id="pointer" x1="2.374846" y1="4.2292032" x2="2.9911561" y2="3.472085" gradientUnits="userSpaceOnUse"
+                    gradientTransform="matrix(1.6303494,0,0,1.6303494,-1.7597787,-2.3128258)">
+      <stop offset="0" stop-color="#a6a6a6" />
+      <stop offset="0.17" stop-color="#b2b2b2" />
+      <stop offset="1" stop-color="#f2f2f2" />
+    </linearGradient>
+    <filter id="blur" x="-0.07" y="-0.05" width="1.14" height="1.1" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="0.049819289" />
+    </filter>
+  </defs>
+  <rect width="164" height="314" fill="url(#screen)" />
+  <!-- The logo's two quarter circles, centred on the corner -->
+  <circle cx="0" cy="0" r="120" fill="#a6a6a6" fill-opacity="0.35" />
+  <circle cx="0" cy="0" r="74" fill="#a6a6a6" fill-opacity="0.4" />
+  <!-- The logo's pointer and its shadow, moved so that the logo's corner (0.396, 1.194) is at (0, 0), 41.7 px a unit -->
+  <g transform="scale(41.7) translate(-0.396,-1.194)">
+    <path d="M 1.7404272,2.6010142 2.0564432,4.7371948 2.4938298,4.1733052 2.9749339,4.9583184 3.2805036,4.7710395 2.7993995,3.986026 3.5004196,3.8522771 Z"
+          fill="#000000" opacity="0.75" filter="url(#blur)" />
+    <path d="M 1.7959828,2.4621252 2.1119988,4.5983058 2.5493854,4.0344162 3.0304895,4.8194294 3.3360592,4.6321505 2.8549551,3.847137 3.5559752,3.7133881 Z"
+          fill="url(#pointer)" />
+  </g>
+</svg>

@@ -18,6 +18,12 @@ namespace WinHotCorner
         [DllImport("user32.dll")]
         private static extern bool PostMessage(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
 
+        [DllImport("advapi32.dll", SetLastError = true)]
+        private static extern bool GetTokenInformation(IntPtr token, int tokenInformationClass, out int information, int length, out int returnLength);
+
+        private const int TokenElevation = 20;
+        private const int TokenUIAccess = 26;
+
         /// <summary>
         /// How often the watchdog checks the mouse hook and the monitor layout, in milliseconds
         /// </summary>
@@ -53,6 +59,7 @@ namespace WinHotCorner
         private readonly MouseHook _hook = new MouseHook();
         private readonly Timer _watchdog = new Timer { Interval = WATCHDOG_INTERVAL };
         private MessageWindow _window;
+        private Ripple _ripple;
         private List<CornerPressure> _corners = new List<CornerPressure>();
 
         /// <summary>
@@ -81,6 +88,7 @@ namespace WinHotCorner
         public bool Start()
         {
             _window = new MessageWindow(this);
+            _ripple = new Ripple();
 
             // Watch before loading, so a change made in between is not missed
             WatchConfiguration();
@@ -96,8 +104,21 @@ namespace WinHotCorner
             _hook.Install();
             GetCursorPos(out _lastCursorPos);
             _watchdog.Start();
-            Log.Info("Started");
+            Log.Info($"Started (elevated: {HasToken(TokenElevation)}, uiAccess: {HasToken(TokenUIAccess)})");
             return true;
+        }
+
+        /// <summary>
+        /// Reads a yes/no property of this process's token, for the log
+        /// </summary>
+        private static string HasToken(int informationClass)
+        {
+            using (WindowsIdentity identity = WindowsIdentity.GetCurrent())
+            {
+                if (!GetTokenInformation(identity.Token, informationClass, out int value, sizeof(int), out _))
+                    return "unknown";
+                return value != 0 ? "yes" : "no";
+            }
         }
 
         public void Stop()
@@ -108,6 +129,7 @@ namespace WinHotCorner
             _exitEvent?.Dispose();
             _userWatcher?.Dispose();
             _policyWatcher?.Dispose();
+            _ripple?.Dispose();
             _window?.DestroyHandle();
         }
 
@@ -141,7 +163,9 @@ namespace WinHotCorner
             {
                 Log.Info("Turned off in the configuration, exiting.");
                 Application.ExitThread();
+                return;
             }
+            UpdateCorners();
         }
 
         /// <summary>
@@ -191,7 +215,7 @@ namespace WinHotCorner
             bool involved = false;
             for (int i = 0; i < _corners.Count; i++)
             {
-                if (_corners[i].IsHeld || _corners[i].IsNear(pt))
+                if (_corners[i].IsWatching || _corners[i].IsNear(pt))
                 {
                     involved = true;
                     break;
@@ -235,7 +259,17 @@ namespace WinHotCorner
                 return;
             }
 
-            TaskView.Open();
+            if (!TaskView.Open())
+                return;
+
+            foreach (CornerPressure corner in _corners)
+            {
+                if (corner.Corner.Monitor == monitor)
+                {
+                    _ripple.Play(corner.Corner);
+                    break;
+                }
+            }
         }
 
         /// <summary>
@@ -243,7 +277,7 @@ namespace WinHotCorner
         /// </summary>
         private void UpdateCorners()
         {
-            List<HotCorner> corners = DisplayLayout.GetHotCorners();
+            List<HotCorner> corners = DisplayLayout.GetHotCorners(Configuration.Screens);
 
             bool same = corners.Count == _corners.Count;
             for (int i = 0; same && i < corners.Count; i++)
@@ -253,6 +287,13 @@ namespace WinHotCorner
 
             _corners = corners.ConvertAll(corner => new CornerPressure(corner));
             Log.Info($"Hot corners: {string.Join(", ", corners)}");
+
+            // Covered corners rely on Windows holding the pointer; for the log only, it may not be what is in effect
+            if (corners.Exists(corner => corner.Covered))
+            {
+                object clip = Registry.GetValue(@"HKEY_CURRENT_USER\Control Panel\Desktop", "MouseCornerClipLength", null);
+                Log.Info($"MouseCornerClipLength: {clip ?? "not set (6)"}");
+            }
         }
 
         /// <summary>

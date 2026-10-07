@@ -8,105 +8,136 @@
     </Window.SystemBackdrop>
 
     <ScrollViewer>
-        <StackPanel MaxWidth="1000" Margin="36,28,36,36" Spacing="4">
+        <!-- The Grid takes the viewport's width; a MaxWidth panel straight in the ScrollViewer is placed off centre
+             once the window is wider than it -->
+        <Grid>
+            <StackPanel MaxWidth="1000" Margin="36,28,36,36" Spacing="4">
 
-            <Grid ColumnSpacing="16" Margin="0,0,0,16">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <StackPanel VerticalAlignment="Center">
-                    <TextBlock Text="WinHotCorner" Style="{StaticResource SubtitleTextBlockStyle}" />
-                    <TextBlock Text="Control Panel" Style="{StaticResource TitleLargeTextBlockStyle}" />
-                </StackPanel>
-                <Image Grid.Column="1" Source="ms-appx:///Assets/Logo.png" Width="160" Height="160"
-                       AutomationProperties.AccessibilityView="Raw" />
-            </Grid>
+                <Grid ColumnSpacing="16" Margin="0,0,0,16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="WinHotCorner" Style="{StaticResource SubtitleTextBlockStyle}" />
+                        <TextBlock Text="Control Panel" Style="{StaticResource TitleLargeTextBlockStyle}" />
+                    </StackPanel>
+                    <Image Grid.Column="1" Source="ms-appx:///Assets/Logo.png" Width="160" Height="160"
+                           AutomationProperties.AccessibilityView="Raw" />
+                </Grid>
 
-            <InfoBar x:Name="NotInstalledInfo" Severity="Warning" IsClosable="False"
-                     Title="The hot corner is not installed"
-                     Message="Install WinHotCorner to use these settings." />
-            <InfoBar x:Name="PolicyInfo" Severity="Informational" IsClosable="False"
-                     Title="Some settings are managed by your organization" />
+                <InfoBar x:Name="NotInstalledInfo" Severity="Warning" IsClosable="False"
+                         Title="The hot corner is not installed"
+                         Message="Install WinHotCorner to use these settings." />
+                <InfoBar x:Name="PolicyInfo" Severity="Informational" IsClosable="False"
+                         Title="Some settings are managed by your organization" />
 
-            <Grid Style="{StaticResource CardStyle}">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <FontIcon Glyph="&#xE7C4;" Style="{StaticResource CardIconStyle}" />
-                <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                    <TextBlock Text="Hot corner" />
-                    <TextBlock x:Name="StatusText" Style="{StaticResource CardDescriptionStyle}" />
-                </StackPanel>
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                    <TextBlock x:Name="EnabledState" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
-                    <ToggleSwitch x:Name="EnabledSwitch" Style="{StaticResource CardToggleSwitchStyle}"
-                                  AutomationProperties.Name="Hot corner" Toggled="EnabledSwitch_Toggled" />
-                </StackPanel>
-            </Grid>
+                <Grid Style="{StaticResource CardStyle}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <FontIcon Glyph="&#xE7C4;" Style="{StaticResource CardIconStyle}" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="Hot corner" />
+                        <TextBlock x:Name="StatusText" Style="{StaticResource CardDescriptionStyle}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                        <Button x:Name="RunNowButton" Content="Run now" VerticalAlignment="Center" Visibility="Collapsed"
+                                Click="RunNowButton_Click" />
+                        <TextBlock x:Name="EnabledState" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+                        <ToggleSwitch x:Name="EnabledSwitch" Style="{StaticResource CardToggleSwitchStyle}"
+                                      AutomationProperties.Name="Hot corner" Toggled="EnabledSwitch_Toggled" />
+                    </StackPanel>
+                </Grid>
 
-            <TextBlock Text="Preferences" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="1,28,0,8" />
+                <TextBlock Text="Preferences" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="1,28,0,8" />
 
-            <Grid Style="{StaticResource CardStyle}">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <FontIcon Glyph="&#xE740;" Style="{StaticResource CardIconStyle}" />
-                <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                    <TextBlock Text="Disable when fullscreen" />
-                    <TextBlock Text="Don't trigger while an app is fullscreen on that screen, for example a game or a video."
-                               Style="{StaticResource CardDescriptionStyle}" />
-                </StackPanel>
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                    <TextBlock x:Name="FullscreenState" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
-                    <ToggleSwitch x:Name="FullscreenSwitch" Style="{StaticResource CardToggleSwitchStyle}"
-                                  AutomationProperties.Name="Disable when fullscreen" Toggled="FullscreenSwitch_Toggled" />
-                </StackPanel>
-            </Grid>
+                <!-- The choices are too long to sit next to the text, so the box goes below it -->
+                <Grid Style="{StaticResource CardStyle}" RowSpacing="10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <FontIcon Glyph="&#xE7F4;" Style="{StaticResource CardIconStyle}" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="Hot corner screens" />
+                        <TextBlock Text="Determines which screens have a hot corner."
+                                   Style="{StaticResource CardDescriptionStyle}" />
+                    </StackPanel>
+                    <ComboBox x:Name="ScreensBox" Grid.Row="1" Grid.Column="1"
+                              AutomationProperties.Name="Hot corner screens" SelectionChanged="ScreensBox_SelectionChanged">
+                        <x:String>Primary screen only</x:String>
+                        <x:String>Screens with no top left neighbours</x:String>
+                        <x:String>Primary screen and screens with no top left neighbours</x:String>
+                        <x:String>All screens</x:String>
+                    </ComboBox>
+                </Grid>
 
-            <Grid Style="{StaticResource CardStyle}">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <FontIcon Glyph="&#xE962;" Style="{StaticResource CardIconStyle}" />
-                <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                    <TextBlock Text="Disable when mouse button is down" />
-                    <TextBlock Text="Don't trigger while a mouse button is held, for example while dragging."
-                               Style="{StaticResource CardDescriptionStyle}" />
-                </StackPanel>
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                    <TextBlock x:Name="MouseDownState" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
-                    <ToggleSwitch x:Name="MouseDownSwitch" Style="{StaticResource CardToggleSwitchStyle}"
-                                  AutomationProperties.Name="Disable when mouse button is down" Toggled="MouseDownSwitch_Toggled" />
-                </StackPanel>
-            </Grid>
+                <Grid Style="{StaticResource CardStyle}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <FontIcon Glyph="&#xE740;" Style="{StaticResource CardIconStyle}" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="Disable when fullscreen" />
+                        <TextBlock Text="Don't trigger while an app is fullscreen on that screen, for example a game or a video."
+                                   Style="{StaticResource CardDescriptionStyle}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                        <TextBlock x:Name="FullscreenState" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+                        <ToggleSwitch x:Name="FullscreenSwitch" Style="{StaticResource CardToggleSwitchStyle}"
+                                      AutomationProperties.Name="Disable when fullscreen" Toggled="FullscreenSwitch_Toggled" />
+                    </StackPanel>
+                </Grid>
 
-            <Grid Style="{StaticResource CardStyle}">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <FontIcon Glyph="&#xE7C9;" Style="{StaticResource CardIconStyle}" />
-                <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                    <TextBlock Text="Pressure" />
-                    <TextBlock x:Name="ThresholdDescription" Style="{StaticResource CardDescriptionStyle}"
-                               Text="How hard to push into the corner. Higher needs a harder push." />
-                </StackPanel>
-                <NumberBox x:Name="ThresholdBox" Grid.Column="2" Width="150" VerticalAlignment="Center"
-                           SpinButtonPlacementMode="Inline" SmallChange="10" LargeChange="50"
-                           AutomationProperties.Name="Pressure" ValueChanged="ThresholdBox_ValueChanged" />
-            </Grid>
+                <Grid Style="{StaticResource CardStyle}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <FontIcon Glyph="&#xE962;" Style="{StaticResource CardIconStyle}" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="Disable when mouse button is down" />
+                        <TextBlock Text="Don't trigger while a mouse button is held, for example while dragging."
+                                   Style="{StaticResource CardDescriptionStyle}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                        <TextBlock x:Name="MouseDownState" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+                        <ToggleSwitch x:Name="MouseDownSwitch" Style="{StaticResource CardToggleSwitchStyle}"
+                                      AutomationProperties.Name="Disable when mouse button is down" Toggled="MouseDownSwitch_Toggled" />
+                    </StackPanel>
+                </Grid>
 
-            <Button x:Name="ResetButton" Content="Reset preferences" HorizontalAlignment="Right" Margin="0,12,0,0"
-                    Click="ResetButton_Click" />
+                <Grid Style="{StaticResource CardStyle}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <FontIcon Glyph="&#xE7C9;" Style="{StaticResource CardIconStyle}" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="Pressure" />
+                        <TextBlock x:Name="ThresholdDescription" Style="{StaticResource CardDescriptionStyle}"
+                                   Text="How hard to push into the corner. Higher needs a harder push." />
+                    </StackPanel>
+                    <NumberBox x:Name="ThresholdBox" Grid.Column="2" Width="150" VerticalAlignment="Center"
+                               SpinButtonPlacementMode="Inline" SmallChange="10" LargeChange="50"
+                               AutomationProperties.Name="Pressure" ValueChanged="ThresholdBox_ValueChanged" />
+                </Grid>
 
-        </StackPanel>
+                <Button x:Name="ResetButton" Content="Reset preferences" HorizontalAlignment="Right" Margin="0,12,0,0"
+                        Click="ResetButton_Click" />
+
+            </StackPanel>
+        </Grid>
     </ScrollViewer>
 </Window>

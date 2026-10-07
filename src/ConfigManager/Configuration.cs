@@ -1,6 +1,21 @@
 ﻿namespace WinHotCorner
 {
     /// <summary>
+    /// Which screens have a hot corner. A screen's top-left corner is free when no other screen is directly to its
+    /// left or above it; a covered corner only works where Windows itself holds the pointer (its sticky corners).
+    /// </summary>
+    public enum HotCornerScreens
+    {
+        /// <summary>
+        /// The primary screen, and every screen whose corner is free (GNOME's choice)
+        /// </summary>
+        PrimaryAndFree = 0,
+        Primary = 1,
+        Free = 2,
+        All = 3,
+    }
+
+    /// <summary>
     /// The settings of the hot corner. Every property starts at its default.
     /// </summary>
     public class Configuration
@@ -19,6 +34,8 @@
         /// </summary>
         public int PressureThreshold { get; set; } = 100;
 
+        public HotCornerScreens Screens { get; set; } = HotCornerScreens.PrimaryAndFree;
+
         public bool DisableWhenFullscreen { get; set; } = true;
         public bool DisableWhenMouseDown { get; set; } = true;
 
@@ -28,7 +45,7 @@
         /// <returns></returns>
         public override string ToString()
         {
-            return $"Enabled: {Enabled}, PressureThreshold: {PressureThreshold}, DisableWhenFullscreen: {DisableWhenFullscreen}, DisableWhenMouseDown: {DisableWhenMouseDown}";
+            return $"Enabled: {Enabled}, PressureThreshold: {PressureThreshold}, Screens: {Screens}, DisableWhenFullscreen: {DisableWhenFullscreen}, DisableWhenMouseDown: {DisableWhenMouseDown}";
         }
     }
 }

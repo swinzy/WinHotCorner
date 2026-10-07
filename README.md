@@ -47,6 +47,8 @@ You never need both: *Full* already contains the hot corner. If you installed *H
 
 The hot corner starts right away and from then on whenever you sign in. In *Installed apps* the two parts appear as *WinHotCorner* and *WinHotCorner Control Panel*.
 
+Setup offers to **sign WinHotCorner on this computer** (on by default). Signed, it runs without administrator rights, also works with administrator windows in front on standard accounts (not officially tested), and its ripple shows above Task View. Setup makes a certificate on your computer that can sign nothing else, because its private key is deleted right after signing; see [Signing WinHotCorner on your computer](docs/digital-signature.md). If signing is not possible (some company policies do not allow it), Setup installs it the usual way and says so. To change your mind, run Setup again; uninstalling removes the certificate.
+
 The installers are not signed yet, so Windows may show a SmartScreen warning: choose *More info* → *Run anyway*.
 
 **Requirements**: Windows 10 version 1903 or later, or Windows 11; 64-bit.
@@ -56,6 +58,7 @@ The installers are not signed yet, so Windows may show a SmartScreen warning: ch
 Open **WinHotCorner Control Panel** from the Start menu to:
 
 - turn the hot corner off or on,
+- choose which screens have a hot corner,
 - keep it from triggering while an app is fullscreen on that screen (games, videos), or while a mouse button is held (dragging),
 - change how hard you have to push into the corner.
 
@@ -68,12 +71,14 @@ Changes apply immediately. Without the control panel, the hot corner works with 
 
 ## Multiple screens
 
-Every screen whose top-left corner is free (no other screen directly to its left or above it) has a hot corner. On a side-by-side setup, that is the left screen.
+As on GNOME, the primary screen has a hot corner, and so does every screen with no neighbour at its top left (no other screen directly to the left of its top-left corner or directly above it). The control panel's *Hot corner screens* can change this to the primary screen only, screens with no top-left neighbour only, or all screens.
+
+A corner with another screen next to it works because Windows holds the pointer there for a few pixels (its "sticky corners"): push into the very top of the edge. If you have turned sticky corners off (`MouseCornerClipLength` set to 0), or the screens are not aligned at the top, such a corner does not trigger.
 
 ## Troubleshooting
 
 **It does not trigger while Task Manager or another app running as administrator is in front.**
-WinHotCorner runs with your highest privileges so that this works. On a standard (non-administrator) account it cannot, because Windows does not let normal programs control administrator windows.
+WinHotCorner runs with your highest privileges so that this works. On a standard (non-administrator) account it cannot, because Windows does not let normal programs control administrator windows, unless you let Setup sign it on your computer.
 
 **Something else is wrong.**
 Errors are written to `%LOCALAPPDATA%\WinHotCorner\WinHotCorner.log`. Please attach it to an [issue](https://github.com/swinzy/WinHotCorner/issues).
@@ -82,4 +87,4 @@ Errors are written to `%LOCALAPPDATA%\WinHotCorner\WinHotCorner.log`. Please att
 
 See the [technical notes](docs/technical.md): how a push is detected, configuration, startup, the installers and how to build.
 
-Planned work is in [TODO.md](TODO.md).
+Planned work is in [TODO.md](https://github.com/swinzy/WinHotCorner/blob/devel/TODO.md) (on the `devel` branch, where development happens).

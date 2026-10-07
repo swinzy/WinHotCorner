@@ -20,6 +20,10 @@ namespace WinHotCorner
     ///
     /// GNOME's numbers are in logical pixels; they are scaled by the monitor's display scale here because the
     /// mouse hook reports physical pixels.
+    ///
+    /// Where another monitor is beyond an edge, the pointer usually just moves on to it, but near the corner Windows
+    /// may hold it for a few pixels (its sticky corners, MouseCornerClipLength). Whether it did shows only at the
+    /// next event, so such a movement is kept until then and counts only if the pointer stayed.
     /// </remarks>
     internal class CornerPressure
     {
@@ -58,6 +62,11 @@ namespace WinHotCorner
         /// </summary>
         public bool IsHeld => _leftEdgeHeld || _topEdgeHeld;
 
+        /// <summary>
+        /// Needs the next pointer movement even if it is not near the corner
+        /// </summary>
+        public bool IsWatching => IsHeld || _pending.HasValue;
+
         private readonly int _edgeLength;
         private readonly int _leaveDistance;
         private readonly Queue<PressureEvent> _events = new Queue<PressureEvent>();
@@ -66,6 +75,18 @@ namespace WinHotCorner
         private bool _triggered = false;
         private bool _leftEdgeHeld = false;
         private bool _topEdgeHeld = false;
+
+        private struct Move
+        {
+            public POINT Prev;
+            public POINT Pt;
+            public uint Time;
+        }
+
+        /// <summary>
+        /// A movement towards another monitor, until the next one shows whether the pointer went there
+        /// </summary>
+        private Move? _pending;
 
         public CornerPressure(HotCorner corner)
         {
@@ -90,8 +111,35 @@ namespace WinHotCorner
         /// <returns>true if the corner should trigger now</returns>
         public bool OnMove(POINT prev, POINT pt, uint time, double threshold)
         {
-            // When stopped, Windows keeps the pointer at the edges of the corner
-            bool stopped = (pt.X < Corner.X || pt.Y < Corner.Y) && IsStopped(pt);
+            bool trigger = false;
+
+            // The pointer is now where the kept movement ended: it stayed if it is still on this side of both edges
+            if (_pending.HasValue)
+            {
+                Move move = _pending.Value;
+                _pending = null;
+                bool stayed = prev.X >= Corner.X && prev.Y >= Corner.Y;
+                trigger = Apply(move.Prev, move.Pt, move.Time, stayed, threshold);
+            }
+
+            bool outside = pt.X < Corner.X || pt.Y < Corner.Y;
+            if (outside && DisplayLayout.IsOnAnyMonitor(pt))
+            {
+                _pending = new Move { Prev = prev, Pt = pt, Time = time };
+                return trigger;
+            }
+
+            // Off every monitor: the edges of the screens stop the pointer
+            return Apply(prev, pt, time, outside, threshold) || trigger;
+        }
+
+        /// <summary>
+        /// Applies one pointer movement, once it is known whether the pointer was stopped
+        /// </summary>
+        /// <param name="stopped">the pointer did not go past the edges of the corner</param>
+        private bool Apply(POINT prev, POINT pt, uint time, bool stopped, double threshold)
+        {
+            // When stopped, the pointer stays at the edges of the corner
             var end = stopped ? new POINT { X = Math.Max(pt.X, Corner.X), Y = Math.Max(pt.Y, Corner.Y) } : pt;
 
             // Pushing out past an edge, near the corner
@@ -141,16 +189,6 @@ namespace WinHotCorner
                 return true;
             return false;
         }
-
-        /// <summary>
-        /// Whether something stops the pointer from going to <paramref name="pt"/>.
-        /// </summary>
-        /// <remarks>
-        /// For now only the edges of the screens do: the pointer stops when the point is on no monitor (on another
-        /// monitor, it just goes there). Anything else that holds the pointer, such as a pointer barrier made with
-        /// ClipCursor, would be checked here too.
-        /// </remarks>
-        private static bool IsStopped(POINT pt) => !DisplayLayout.IsOnAnyMonitor(pt);
 
         /// <summary>
         /// One push against an edge (GNOME's _onBarrierHit)
