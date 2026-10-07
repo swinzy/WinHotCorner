@@ -4,7 +4,7 @@ Planned work and open questions. See [docs/technical.md](docs/technical.md) for 
 
 ## Releases
 
-- [ ] **Sign the installers and programs.** Unsigned programs get SmartScreen warnings, and Smart App Control in Windows 11 can block them outright. [SignPath Foundation](https://signpath.org) signs open source projects for free when they are built in CI.
+- [ ] **Sign the installers and programs.** Unsigned programs get SmartScreen warnings, and Smart App Control in Windows 11 can block them outright.
 
 ## Hot corner
 
