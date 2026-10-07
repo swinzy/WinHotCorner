@@ -48,6 +48,10 @@ UninstallDisplayName={#AppName}
 OutputDir=Output
 OutputBaseFilename=WinHotCorner-HotCornerOnly-{#FileNameVersion}-setup
 WizardStyle=modern
+; Our logo instead of Inno Setup's pictures, in sizes for several display scales (Setup picks the closest);
+; the large one, on the first and last pages, is drawn from images\wizard.svg
+WizardImageFile=images\wizard-202.png,images\wizard-336.png,images\wizard-430.png,images\wizard-534.png
+WizardSmallImageFile=images\wizard-small-58.png,images\wizard-small-77.png,images\wizard-small-97.png,images\wizard-small-116.png,images\wizard-small-124.png,images\wizard-small-143.png,images\wizard-small-159.png
 Compression=lzma2
 SolidCompression=yes
 ; Stopping the running hot corner is done in the code below
