@@ -66,7 +66,7 @@ Windows has no public function to open Task View, so the hot corner sends Win+Ta
 
 When Task View opens, the corner plays GNOME's ripple (`Ripple.cs`, a port of GNOME Shell's `js/ui/ripples.js`): three quarter circles grow out of the corner and fade away within about 1.4 s, drawn in the `.ripple-box` style of GNOME's theme (white at 20 %, 52 logical pixels, with a soft edge). It is skipped when Windows animations are turned off (*Animation effects* in Settings).
 
-The ripple is a click-through layered window that never takes the focus or shows up in Task View. Task View covers ordinary topmost windows, though; only a window of a program with `uiAccess` stays above it. So for now the ripple plays under Task View and is mostly hidden by it; it becomes visible once signed builds run with `uiAccess` (see [TODO.md](../TODO.md)). The hot corner does not need to know which case it is in.
+The ripple is a click-through layered window that never takes the focus or shows up in Task View. Task View covers ordinary topmost windows, though; only a window of a program with `uiAccess` stays above it. So for now the ripple plays under Task View and is mostly hidden by it; it becomes visible once the hot corner can run with `uiAccess` (see [TODO.md](../TODO.md)). The hot corner does not need to know which case it is in.
 
 ## Configuration
 
