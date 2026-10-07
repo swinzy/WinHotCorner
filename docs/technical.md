@@ -94,7 +94,7 @@ Errors are appended to `%LOCALAPPDATA%\WinHotCorner\WinHotCorner.log` (moved to 
 
 ## Startup and privileges
 
-Windows does not let a normal program send input to, or see the mouse over, an elevated window (UIPI). There are two ways around that, and the installer offers both: it asks before installing whether to sign WinHotCorner on this computer (the `uiaccess` task, off by default). Only the chosen version is installed.
+Windows does not let a normal program send input to, or see the mouse over, an elevated window (UIPI). There are two ways around that, and the installer offers both: it asks before installing whether to sign WinHotCorner on this computer (the `uiaccess` task, on by default). Only the chosen version is installed. Signed is the better choice where it works: the hot corner then runs without elevation; tested on Windows 11 with an administrator account, it still triggers with an elevated Task Manager in front.
 
 **Usually: elevated, from a scheduled task.** The installer registers a scheduled task, `WinHotCorner`, that starts the hot corner at every user's sign-in:
 
@@ -107,7 +107,7 @@ Windows does not let a normal program send input to, or see the mouse over, an e
 The project has no certificate from a certificate authority, so the installer makes one on the user's computer (`installer\uiaccess.ps1`, run elevated):
 
 1. It makes a self-signed certificate for code signing only, adds it to the computer's trusted root certificates, signs the hot corner with it and deletes the private key straight away. Without the key nothing else can ever be signed with that certificate, so trusting it trusts only this one file. A certificate shared by all users would not do: a trusted root covers everything its key signs, and a self-signed certificate cannot be revoked if the key leaks.
-2. The signing happens in Setup's temporary folder, which only administrators can change, before anything is installed: if it fails, Setup stops and the installed hot corner stays as it was.
+2. The signing happens in Setup's temporary folder, which only administrators can change, before anything is installed. If it fails (a policy may not allow new root certificates, for example), Setup says so and installs the usual version instead, and records the task as not chosen, so updates do not try again.
 3. The signature has no timestamp, so it is valid only while the certificate is; the certificate lasts 100 years.
 4. Every update replaces the program, so it is signed again with a new certificate, and the old one is removed. Switching back (running Setup again without the task) and uninstalling remove the certificate too, so none is left behind.
 
@@ -134,7 +134,7 @@ The control panel writes only the value that changed, so it never copies a Group
 Both are Inno Setup 7 scripts in `installer`, published as two downloads:
 
 - `WinHotCorner.iss` builds **`WinHotCorner-HotCornerOnly-<version>-setup.exe`**: the hot corner. Installs to `Program Files\WinHotCorner`, registers the scheduled task, or signs it and adds it to the Run key with the `uiaccess` task (see [Startup and privileges](#startup-and-privileges)), and starts it. Inno Setup remembers the task, so an update keeps the choice. Before installing, upgrading or uninstalling it stops the hot corner in every session and waits until it has exited. Uninstalling keeps the user's settings.
-- `ControlPanel.iss` builds **`WinHotCorner-Full-<version>-setup.exe`**: the control panel, in `Program Files\WinHotCorner\ControlPanel`, with a Start menu shortcut. It contains the hot corner installer and runs it silently when the hot corner is missing or older, so it can install both. It offers the same `uiaccess` task, starting from what the hot corner was installed with, passes the choice on (`/MERGETASKS`), and also runs the hot corner installer when the choice changes. A silent run without tasks on the command line keeps the hot corner's choice. Each product has its own entry in Installed apps and can be uninstalled alone.
+- `ControlPanel.iss` builds **`WinHotCorner-Full-<version>-setup.exe`**: the control panel, in `Program Files\WinHotCorner\ControlPanel`, with a Start menu shortcut. It contains the hot corner installer and runs it silently when the hot corner is missing or older, so it can install both. It offers the same `uiaccess` task, starting from what the hot corner installer recorded (Inno Setup keeps both the chosen and the declined tasks; without either, from a version before the task, the default applies, as in the hot corner installer), passes the choice on (`/MERGETASKS`), and also runs the hot corner installer when the choice changes. A silent run without tasks on the command line keeps the hot corner's choice. If signing failed, it says so once the hot corner installer has finished. Each product has its own entry in Installed apps and can be uninstalled alone.
 
 ## Versions
 

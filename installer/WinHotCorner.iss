@@ -58,7 +58,7 @@ SolidCompression=yes
 CloseApplications=no
 
 [Tasks]
-Name: "uiaccess"; Description: "Sign WinHotCorner on this computer"; Flags: unchecked
+Name: "uiaccess"; Description: "Sign WinHotCorner on this computer"
 
 [Files]
 Source: "{#BinDir}\{#AppExe}"; DestDir: "{app}"; Flags: ignoreversion; Tasks: not uiaccess
@@ -179,11 +179,13 @@ end;
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 begin
   Result := '';
-  // Before anything changes, so a failure leaves the installed hot corner as it was
+  // Before anything changes. If it fails (a policy may not allow new root certificates, for example), install the
+  // usual version instead; the task is then recorded as not chosen, so updates do not try again
   if WizardIsTaskSelected('uiaccess') and not SignHotCorner() then
   begin
-    Result := 'Could not sign {#AppName} on this computer, so nothing was changed. Run Setup again without signing it.';
-    Exit;
+    WizardSelectTasks('!uiaccess');
+    SuppressibleMsgBox('Could not sign {#AppName} on this computer, so it will be installed the usual way instead: it ' +
+      'runs with administrator rights, and its ripple shows under Task View.', mbInformation, MB_OK, IDOK);
   end;
   StopHotCorner();
 end;

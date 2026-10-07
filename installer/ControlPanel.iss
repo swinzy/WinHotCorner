@@ -60,7 +60,7 @@ UsePreviousTasks=no
 
 [Tasks]
 ; Same name and description as in WinHotCorner.iss
-Name: "uiaccess"; Description: "Sign WinHotCorner on this computer"; Flags: unchecked
+Name: "uiaccess"; Description: "Sign WinHotCorner on this computer"
 
 [Files]
 Source: "{#PublishDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
@@ -116,13 +116,27 @@ begin
     Result := Result + '.0';
 end;
 
-// True if the installed hot corner was installed with the uiaccess task
-function HotCornerHasUIAccess(): Boolean;
+// True if the hot corner installer recorded the uiaccess task in that list ("Selected" or "Deselected")
+function HotCornerTaskIn(const List: String): Boolean;
 var
   Tasks: String;
 begin
   Result := RegQueryStringValue(HKLM, 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{#HotCornerAppId}_is1',
-    'Inno Setup: Selected Tasks', Tasks) and (Pos(',uiaccess,', ',' + Lowercase(Tasks) + ',') > 0);
+    'Inno Setup: ' + List + ' Tasks', Tasks) and (Pos(',uiaccess,', ',' + Lowercase(Tasks) + ',') > 0);
+end;
+
+// The installed hot corner is signed for uiAccess
+function HotCornerHasUIAccess(): Boolean;
+begin
+  Result := HotCornerTaskIn('Selected');
+end;
+
+// The hot corner was installed without signing it by choice (or because signing failed). Neither this nor
+// HotCornerHasUIAccess: not installed, or by a version without the task, so the task's default applies, as in the
+// hot corner installer itself
+function HotCornerDeclinedUIAccess(): Boolean;
+begin
+  Result := HotCornerTaskIn('Deselected');
 end;
 
 // Tasks given on the command line
@@ -142,16 +156,20 @@ begin
   if (CurPageID = wpSelectTasks) and not TasksPageShown then
   begin
     TasksPageShown := True;
-    if HotCornerHasUIAccess() and not TasksOnCommandLine() then
-      WizardSelectTasks('uiaccess');
+    if TasksOnCommandLine() then
+      Exit;
+    if HotCornerHasUIAccess() then
+      WizardSelectTasks('uiaccess')
+    else if HotCornerDeclinedUIAccess() then
+      WizardSelectTasks('!uiaccess');
   end;
 end;
 
-// A silent update without tasks on the command line keeps the hot corner as it is
+// A silent update without tasks on the command line keeps the hot corner's choice
 function WantsUIAccess(): Boolean;
 begin
   if WizardSilent() and not TasksOnCommandLine() then
-    Result := HotCornerHasUIAccess()
+    Result := not HotCornerDeclinedUIAccess()
   else
     Result := WizardIsTaskSelected('uiaccess');
 end;
@@ -193,12 +211,11 @@ begin
     ExtractTemporaryFile('{#HotCornerSetup}');
     if not Exec(ExpandConstant('{tmp}\{#HotCornerSetup}'), '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /MERGETASKS="' + Tasks + '"', '',
         SW_HIDE, ewWaitUntilTerminated, ResultCode) or (ResultCode <> 0) then
-    begin
-      Result := Format('Could not install WinHotCorner (exit code %d).', [ResultCode]);
-      // The hot corner installer stops in its own PrepareToInstall (exit code 7) when it cannot sign
-      if UIAccess and (ResultCode = 7) then
-        Result := 'Could not sign WinHotCorner on this computer, so nothing was changed. Run Setup again without signing it.';
-    end;
+      Result := Format('Could not install WinHotCorner (exit code %d).', [ResultCode])
+    // It installs the usual version instead when it cannot sign, and says so only when not silent
+    else if UIAccess and not HotCornerHasUIAccess() then
+      SuppressibleMsgBox('Could not sign WinHotCorner on this computer, so it was installed the usual way instead: ' +
+        'it runs with administrator rights, and its ripple shows under Task View.', mbInformation, MB_OK, IDOK);
   end;
 end;
 
