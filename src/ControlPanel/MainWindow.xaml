@@ -49,6 +49,31 @@
 
             <TextBlock Text="Preferences" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="1,28,0,8" />
 
+            <!-- The choices are too long to sit next to the text, so the box goes below it -->
+            <Grid Style="{StaticResource CardStyle}" RowSpacing="10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <FontIcon Glyph="&#xE7F4;" Style="{StaticResource CardIconStyle}" />
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="Hot corner screens" />
+                    <TextBlock Text="Determines which screens have a hot corner."
+                               Style="{StaticResource CardDescriptionStyle}" />
+                </StackPanel>
+                <ComboBox x:Name="ScreensBox" Grid.Row="1" Grid.Column="1"
+                          AutomationProperties.Name="Hot corner screens" SelectionChanged="ScreensBox_SelectionChanged">
+                    <x:String>Primary screen only</x:String>
+                    <x:String>Screens with no top left neighbours</x:String>
+                    <x:String>Primary screen and screens with no top left neighbours</x:String>
+                    <x:String>All screens</x:String>
+                </ComboBox>
+            </Grid>
+
             <Grid Style="{StaticResource CardStyle}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />

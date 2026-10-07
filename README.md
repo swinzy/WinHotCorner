@@ -56,6 +56,7 @@ The installers are not signed yet, so Windows may show a SmartScreen warning: ch
 Open **WinHotCorner Control Panel** from the Start menu to:
 
 - turn the hot corner off or on,
+- choose which screens have a hot corner,
 - keep it from triggering while an app is fullscreen on that screen (games, videos), or while a mouse button is held (dragging),
 - change how hard you have to push into the corner.
 
@@ -68,7 +69,9 @@ Changes apply immediately. Without the control panel, the hot corner works with 
 
 ## Multiple screens
 
-Every screen whose top-left corner is free (no other screen directly to its left or above it) has a hot corner. On a side-by-side setup, that is the left screen.
+As on GNOME, the primary screen has a hot corner, and so does every screen with no neighbour at its top left (no other screen directly to the left of its top-left corner or directly above it). The control panel's *Hot corner screens* can change this to the primary screen only, screens with no top-left neighbour only, or all screens.
+
+A corner with another screen next to it works because Windows holds the pointer there for a few pixels (its "sticky corners"): push into the very top of the edge. If you have turned sticky corners off (`MouseCornerClipLength` set to 0), or the screens are not aligned at the top, such a corner does not trigger.
 
 ## Troubleshooting
 

@@ -40,7 +40,7 @@ The hook sits in the path of every mouse event in the system, so its handler doe
 
 On GNOME, invisible pointer barriers along the edges at the corner stop the pointer, and GNOME Shell's `PressureBarrier` measures how hard it is pushed against them. WinHotCorner has no barriers of its own: the edges of the screen stop the pointer, as they always do, and `CornerPressure.cs` applies GNOME's rules to how far the pointer would have gone past them. Two edges count, the left one and the top one, each up to 32 logical pixels from the corner (GNOME's barriers are as long as its top bar is tall):
 
-- A movement that would take the pointer out past an edge, to a point that is on no screen, adds pressure. If the point is on another screen, nothing stops the pointer: it just goes there. (`IsStopped` is the one place that decides whether the pointer is stopped, so something else that holds it, such as a `ClipCursor` barrier, could be added there.)
+- A movement that would take the pointer out past an edge adds pressure if the pointer stays: when the point is on no screen, the edge of the screen stops it. When the point is on another screen, the pointer usually just goes there, but near the corner Windows may hold it (see [Multiple monitors](#multiple-monitors)). The hook cannot tell which: such a movement is kept until the next event, and counts only if the pointer has not moved past the edge by then.
 - A movement more along the edge than out past it does not count, so sliding along the edge does not trigger.
 - Each movement adds at most 15. Pressure older than 1 second is forgotten. When the total reaches the threshold (100 by default, as on GNOME), the corner triggers; a single movement of the full threshold triggers at once.
 - So a steady push triggers, even a slow one, but nudges with pauses of over a second do not.
@@ -50,7 +50,9 @@ GNOME's numbers are in logical pixels. The hot corner is per-monitor DPI aware (
 
 ### Multiple monitors
 
-`DisplayLayout.cs` lists the monitors and keeps those whose top-left corner is free: neither the pixel just left of the corner nor the pixel just above it is on another monitor. This is GNOME's test. GNOME also always keeps the primary monitor's corner and stops the pointer there with a barrier; Windows has no pointer barriers, so a covered corner cannot be hit, primary or not. The list is rebuilt on display, DPI and setting changes.
+`DisplayLayout.cs` lists the monitors and decides which corners count, by the *Hot corner screens* setting (`Screens`). A corner is covered when another monitor is directly to its left or above it: the pixel just left of the corner or the pixel just above it is on another monitor. This is GNOME's test. The default is GNOME's choice: the primary monitor's corner, and every corner that is not covered. The list is rebuilt on display, DPI and setting changes.
+
+GNOME stops the pointer at a covered primary corner with a pointer barrier. Windows has no pointer barriers, but it has *sticky corners*: at the ends of an edge shared by two monitors, it holds the pointer for a few pixels (`MouseCornerClipLength` in `HKEY_CURRENT_USER\Control Panel\Desktop`, 6 when not set, 0 turns it off). So with two monitors of the same height side by side, pushing left within the top few pixels of the right monitor's corner does not cross over. Measured on Windows 11 with the right monitor at 200%: the pointer was held at the top 6 rows every time, crossed at the 7th, and diagonal flicks into the corner were held too; the 6 are physical pixels. Meanwhile the hook reports points on the left monitor, so the hot corner only learns that the pointer was held at the next event (see above). Where Windows does not hold the pointer (the clip length is 0, the monitors are not aligned), a covered corner simply never triggers. The registry value is only logged: it may not be what is in effect, as Explorer reads it when it starts.
 
 ### When it does not trigger
 
@@ -76,6 +78,7 @@ Settings are DWORD values in `HKEY_CURRENT_USER\Software\WinHotCorner`, written 
 |---|---|---|---|
 | `Enabled` | 0 or 1 | 1 | 0 makes the hot corner exit, at startup or while running |
 | `PressureThreshold` | 10 to 1000 | 100 | Pressure needed to trigger, in logical pixels |
+| `Screens` | 0 to 3 | 0 | Which screens have a hot corner: 0 the primary screen and every screen whose corner is not covered (GNOME), 1 the primary screen only, 2 only screens whose corner is not covered, 3 all screens |
 | `DisableWhenFullscreen` | 0 or 1 | 1 | |
 | `DisableWhenMouseDown` | 0 or 1 | 1 | |
 

@@ -28,6 +28,12 @@ public sealed partial class MainWindow : Window
     /// </summary>
     private static readonly string HotCornerExe = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "WinHotCorner.exe"));
 
+    /// <summary>
+    /// The choices in <see cref="ScreensBox"/>, in their order there
+    /// </summary>
+    private static readonly HotCornerScreens[] ScreenChoices =
+        [HotCornerScreens.Primary, HotCornerScreens.Free, HotCornerScreens.PrimaryAndFree, HotCornerScreens.All];
+
     private readonly DispatcherQueueTimer _statusTimer;
     private Configuration _config = new();
     private ISet<string> _managed = new HashSet<string>();
@@ -95,13 +101,15 @@ public sealed partial class MainWindow : Window
 
             EnabledSwitch.IsOn = _config.Enabled;
             EnabledSwitch.IsEnabled = installed && !_managed.Contains(nameof(Configuration.Enabled));
+            ScreensBox.SelectedIndex = Array.IndexOf(ScreenChoices, _config.Screens);
+            ScreensBox.IsEnabled = !_managed.Contains(nameof(Configuration.Screens));
             FullscreenSwitch.IsOn = _config.DisableWhenFullscreen;
             FullscreenSwitch.IsEnabled = !_managed.Contains(nameof(Configuration.DisableWhenFullscreen));
             MouseDownSwitch.IsOn = _config.DisableWhenMouseDown;
             MouseDownSwitch.IsEnabled = !_managed.Contains(nameof(Configuration.DisableWhenMouseDown));
             ThresholdBox.Value = _config.PressureThreshold;
             ThresholdBox.IsEnabled = !_managed.Contains(nameof(Configuration.PressureThreshold));
-            ResetButton.IsEnabled = FullscreenSwitch.IsEnabled || MouseDownSwitch.IsEnabled || ThresholdBox.IsEnabled;
+            ResetButton.IsEnabled = ScreensBox.IsEnabled || FullscreenSwitch.IsEnabled || MouseDownSwitch.IsEnabled || ThresholdBox.IsEnabled;
 
             NotInstalledInfo.IsOpen = !installed;
             PolicyInfo.IsOpen = _managed.Count > 0;
@@ -142,6 +150,19 @@ public sealed partial class MainWindow : Window
         UpdateStatus();
     }
 
+    private void ScreensBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_loading || ScreensBox.SelectedIndex < 0)
+            return;
+
+        // The selection made while loading can be reported only later, so compare instead of relying on _loading
+        HotCornerScreens screens = ScreenChoices[ScreensBox.SelectedIndex];
+        if (screens == _config.Screens)
+            return;
+        _config.Screens = screens;
+        ConfigManager.SetUserValue(nameof(Configuration.Screens), (int)screens);
+    }
+
     private void FullscreenSwitch_Toggled(object sender, RoutedEventArgs e)
     {
         if (!_loading)
@@ -177,6 +198,7 @@ public sealed partial class MainWindow : Window
 
     private void ResetButton_Click(object sender, RoutedEventArgs e)
     {
+        ConfigManager.ClearUserValue(nameof(Configuration.Screens));
         ConfigManager.ClearUserValue(nameof(Configuration.DisableWhenFullscreen));
         ConfigManager.ClearUserValue(nameof(Configuration.DisableWhenMouseDown));
         ConfigManager.ClearUserValue(nameof(Configuration.PressureThreshold));

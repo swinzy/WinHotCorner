@@ -26,6 +26,8 @@ namespace WinHotCorner
         /// </summary>
         public const string POLICY_KEY_PATH = @"Software\Policies\WinHotCorner";
 
+        private const int MAX_SCREENS = (int)HotCornerScreens.All;
+
         /// <summary>
         /// Saves the given configuration to the user's key
         /// </summary>
@@ -36,6 +38,7 @@ namespace WinHotCorner
             {
                 key.SetValue(nameof(Configuration.Enabled), cfg.Enabled ? 1 : 0, RegistryValueKind.DWord);
                 key.SetValue(nameof(Configuration.PressureThreshold), cfg.PressureThreshold, RegistryValueKind.DWord);
+                key.SetValue(nameof(Configuration.Screens), (int)cfg.Screens, RegistryValueKind.DWord);
                 key.SetValue(nameof(Configuration.DisableWhenFullscreen), cfg.DisableWhenFullscreen ? 1 : 0, RegistryValueKind.DWord);
                 key.SetValue(nameof(Configuration.DisableWhenMouseDown), cfg.DisableWhenMouseDown ? 1 : 0, RegistryValueKind.DWord);
             }
@@ -79,6 +82,8 @@ namespace WinHotCorner
                     if (TryRead(policy, "policy", nameof(Configuration.PressureThreshold),
                             Configuration.MIN_PRESSURE_THRESHOLD, Configuration.MAX_PRESSURE_THRESHOLD, ignored, out _))
                         names.Add(nameof(Configuration.PressureThreshold));
+                    if (TryRead(policy, "policy", nameof(Configuration.Screens), 0, MAX_SCREENS, ignored, out _))
+                        names.Add(nameof(Configuration.Screens));
                 }
             }
             catch (Exception)
@@ -104,6 +109,7 @@ namespace WinHotCorner
                     cfg.Enabled = ReadBool(policy, user, nameof(Configuration.Enabled), cfg.Enabled, problems);
                     cfg.PressureThreshold = ReadInt(policy, user, nameof(Configuration.PressureThreshold), cfg.PressureThreshold,
                         Configuration.MIN_PRESSURE_THRESHOLD, Configuration.MAX_PRESSURE_THRESHOLD, problems);
+                    cfg.Screens = (HotCornerScreens)ReadInt(policy, user, nameof(Configuration.Screens), (int)cfg.Screens, 0, MAX_SCREENS, problems);
                     cfg.DisableWhenFullscreen = ReadBool(policy, user, nameof(Configuration.DisableWhenFullscreen), cfg.DisableWhenFullscreen, problems);
                     cfg.DisableWhenMouseDown = ReadBool(policy, user, nameof(Configuration.DisableWhenMouseDown), cfg.DisableWhenMouseDown, problems);
                 }

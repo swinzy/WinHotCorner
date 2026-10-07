@@ -144,7 +144,9 @@ namespace WinHotCorner
             {
                 Log.Info("Turned off in the configuration, exiting.");
                 Application.ExitThread();
+                return;
             }
+            UpdateCorners();
         }
 
         /// <summary>
@@ -194,7 +196,7 @@ namespace WinHotCorner
             bool involved = false;
             for (int i = 0; i < _corners.Count; i++)
             {
-                if (_corners[i].IsHeld || _corners[i].IsNear(pt))
+                if (_corners[i].IsWatching || _corners[i].IsNear(pt))
                 {
                     involved = true;
                     break;
@@ -256,7 +258,7 @@ namespace WinHotCorner
         /// </summary>
         private void UpdateCorners()
         {
-            List<HotCorner> corners = DisplayLayout.GetHotCorners();
+            List<HotCorner> corners = DisplayLayout.GetHotCorners(Configuration.Screens);
 
             bool same = corners.Count == _corners.Count;
             for (int i = 0; same && i < corners.Count; i++)
@@ -266,6 +268,13 @@ namespace WinHotCorner
 
             _corners = corners.ConvertAll(corner => new CornerPressure(corner));
             Log.Info($"Hot corners: {string.Join(", ", corners)}");
+
+            // Covered corners rely on Windows holding the pointer; for the log only, it may not be what is in effect
+            if (corners.Exists(corner => corner.Covered))
+            {
+                object clip = Registry.GetValue(@"HKEY_CURRENT_USER\Control Panel\Desktop", "MouseCornerClipLength", null);
+                Log.Info($"MouseCornerClipLength: {clip ?? "not set (6)"}");
+            }
         }
 
         /// <summary>
