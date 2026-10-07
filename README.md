@@ -47,7 +47,7 @@ You never need both: *Full* already contains the hot corner. If you installed *H
 
 The hot corner starts right away and from then on whenever you sign in. In *Installed apps* the two parts appear as *WinHotCorner* and *WinHotCorner Control Panel*.
 
-Setup offers to **sign WinHotCorner on this computer** (on by default). Signed, it runs without administrator rights, also works with administrator windows in front on standard accounts, and its ripple shows above Task View. Setup makes a certificate on your computer that can sign nothing else, because its private key is deleted right after signing; see the [technical notes](docs/technical.md#startup-and-privileges). If signing is not possible (some company policies do not allow it), Setup installs it the usual way and says so. To change your mind, run Setup again; uninstalling removes the certificate.
+Setup offers to **sign WinHotCorner on this computer** (on by default). Signed, it runs without administrator rights, also works with administrator windows in front on standard accounts (not officially tested), and its ripple shows above Task View. Setup makes a certificate on your computer that can sign nothing else, because its private key is deleted right after signing; see [Signing WinHotCorner on your computer](docs/digital-signature.md). If signing is not possible (some company policies do not allow it), Setup installs it the usual way and says so. To change your mind, run Setup again; uninstalling removes the certificate.
 
 The installers are not signed yet, so Windows may show a SmartScreen warning: choose *More info* → *Run anyway*.
 
