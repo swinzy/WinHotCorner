@@ -35,6 +35,14 @@ The private key is what signing needs. Without it, nobody, including me, can sig
 
 If WinHotCorner shipped a certificate for everyone to trust, whoever held its private key could sign any program, and every computer that trusted the certificate would trust that program too. We don't do this so that you don't have to trust me, either to not release any malware (I promise I won't anyway), or to protect the private key from being stolen. A certificate like that cannot be revoked if the key is ever stolen. A certificate made on your computer, whose key is deleted, has none of these problems.
 
+## Why WinHotCorner itself is not signed
+
+The installers and the programs are deliberately not signed with a certificate of mine:
+
+1. **Every certificate that Windows trusts costs money**, year after year. I don't want to support that: it makes it harder to publish open source software for Windows. I know that some companies offer free certificates to individual developers or open source projects. But the more developers use them (or buy their own), the less resistance there will be when Windows one day requires a certificate, and in the end that hurts open source developers. Google is already heading that way: since 30 September 2026, certified Android devices in Brazil, Indonesia, Singapore and Thailand install apps from other app stores than Google Play only if their developers have verified their identity (power users get a harder way around it), and Google plans to do the same everywhere in 2027 ([Android developer verification](https://developer.android.com/developer-verification)).
+2. **A certificate would not get rid of the SmartScreen warning anyway**: SmartScreen goes by reputation, which a new certificate has to build up first. What a certificate would give, Setup already gives by signing WinHotCorner on your computer.
+3. **WinHotCorner is open source software under the GPLv3, which comes without any warranty.** Whether to trust it, and whether to download and run it, is for you to decide, not for a certificate or the authority that issued it. This is not shirking responsibility: deciding for yourself what to run is a good habit that protects you.
+
 ## Checking it
 
 - **The certificate**: open *Manage computer certificates* (`certlm.msc`) → *Trusted Root Certification Authorities* → *Certificates*, and look for `WinHotCorner (made on this computer)`. There is at most one. It says *Code Signing* under *Intended Purposes*, and it has no private key.

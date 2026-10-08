@@ -52,7 +52,12 @@ The hot corner starts right away and whenever you sign in.
 
 By default, Setup signs WinHotCorner on your computer, so it runs without administrator rights and its ripple shows above Task View; see [Signing WinHotCorner on your computer](docs/digital-signature.md).
 
-The installers themselves are not signed, so Windows may show a SmartScreen warning: choose *More info* → *Run anyway*.
+> [!IMPORTANT]
+> The installers themselves are not signed, so Windows may show a SmartScreen warning: choose *More info* → *Run anyway*.
+>
+> This is on purpose. Trusted certificates cost money, and the more open source developers get one, even a free one, the easier it becomes for Windows to require them one day, as Google has started to do on [Android](https://developer.android.com/developer-verification).
+>
+> Read more about [why WinHotCorner itself is not signed](docs/digital-signature.md#why-winhotcorner-itself-is-not-signed).
 
 Windows 10 version 1903 or later, or Windows 11, 64-bit. In English, 简体中文, 繁體中文 and Español.
 
