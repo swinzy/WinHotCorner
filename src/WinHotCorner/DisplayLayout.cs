@@ -25,12 +25,18 @@ namespace WinHotCorner
         /// </summary>
         public double Scale;
         /// <summary>
-        /// Another monitor is directly to the left of the corner or above it
+        /// Another monitor is directly beside the corner or above it
         /// </summary>
         public bool Covered;
+        /// <summary>
+        /// The monitor's bounds
+        /// </summary>
+        public RECT Bounds;
 
         public bool Equals(HotCorner other) =>
             Monitor == other.Monitor && X == other.X && Y == other.Y && Scale == other.Scale && Covered == other.Covered &&
+            Bounds.Left == other.Bounds.Left && Bounds.Top == other.Bounds.Top && Bounds.Right == other.Bounds.Right &&
+            Bounds.Bottom == other.Bounds.Bottom &&
             RightToLeft == other.RightToLeft;
 
         public override string ToString() =>
@@ -133,6 +139,7 @@ namespace WinHotCorner
                         RightToLeft = rightToLeft,
                         Scale = GetScale(monitor.Key),
                         Covered = covered,
+                        Bounds = bounds,
                     });
                 }
             }

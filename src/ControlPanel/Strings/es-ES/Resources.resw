@@ -81,6 +81,15 @@
   <data name="ScreensAll" xml:space="preserve">
     <value>Todas las pantallas</value>
   </data>
+  <data name="HoldTitle.Text" xml:space="preserve">
+    <value>Ampliar el área de la esquina activa</value>
+  </data>
+  <data name="HoldDescription.Text" xml:space="preserve">
+    <value>Facilita activarla colocando una barrera en cada pantalla con esquina activa</value>
+  </data>
+  <data name="HoldSwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Ampliar el área de la esquina activa</value>
+  </data>
   <data name="MirrorTitle.Text" xml:space="preserve">
     <value>Reflejar para idiomas de derecha a izquierda</value>
   </data>

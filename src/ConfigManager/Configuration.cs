@@ -42,6 +42,12 @@
         /// </summary>
         public bool MirrorForRightToLeft { get; set; } = true;
 
+        /// <summary>
+        /// Holds the pointer at a covered corner (another monitor beside it or above it) with ClipCursor, as GNOME's
+        /// barrier does (Expand hot corner area in the control panel)
+        /// </summary>
+        public bool ExpandHotCornerArea { get; set; } = true;
+
         public bool DisableWhenFullscreen { get; set; } = true;
         public bool DisableWhenMouseDown { get; set; } = true;
 
@@ -51,7 +57,7 @@
         /// <returns></returns>
         public override string ToString()
         {
-            return $"Enabled: {Enabled}, PressureThreshold: {PressureThreshold}, Screens: {Screens}, MirrorForRightToLeft: {MirrorForRightToLeft}, DisableWhenFullscreen: {DisableWhenFullscreen}, DisableWhenMouseDown: {DisableWhenMouseDown}";
+            return $"Enabled: {Enabled}, PressureThreshold: {PressureThreshold}, Screens: {Screens}, MirrorForRightToLeft: {MirrorForRightToLeft}, ExpandHotCornerArea: {ExpandHotCornerArea}, DisableWhenFullscreen: {DisableWhenFullscreen}, DisableWhenMouseDown: {DisableWhenMouseDown}";
         }
     }
 }

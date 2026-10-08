@@ -81,6 +81,15 @@
   <data name="ScreensAll" xml:space="preserve">
     <value>All screens</value>
   </data>
+  <data name="HoldTitle.Text" xml:space="preserve">
+    <value>Expand hot corner area</value>
+  </data>
+  <data name="HoldDescription.Text" xml:space="preserve">
+    <value>Makes it easier to trigger by putting a barrier at each screen with a hot corner</value>
+  </data>
+  <data name="HoldSwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Expand hot corner area</value>
+  </data>
   <data name="MirrorTitle.Text" xml:space="preserve">
     <value>Mirror for right-to-left</value>
   </data>

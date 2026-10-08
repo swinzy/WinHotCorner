@@ -75,7 +75,7 @@ Changes apply immediately. Without the control panel, the hot corner works with 
 
 As on GNOME, the primary screen has a hot corner, and so does every screen with no neighbour at its top left (no other screen directly to the left of its top-left corner or directly above it; top right and to the right in a right-to-left language). The control panel's *Hot corner screens* can change this to the primary screen only, screens with no top-left neighbour only, or all screens.
 
-A corner with another screen next to it works because Windows holds the pointer there for a few pixels (its "sticky corners"): push into the very top of the edge. If you have turned sticky corners off (`MouseCornerClipLength` set to 0), or the screens are not aligned at the top, such a corner does not trigger.
+A corner with another screen next to it holds the pointer as well, like on GNOME, so it works like any other (*Expand hot corner area* in the control panel, on by default). Turned off, only Windows' own "sticky corners" hold the pointer there, for a few pixels at the very top of the edge.
 
 ## Troubleshooting
 

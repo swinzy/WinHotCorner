@@ -81,6 +81,15 @@
   <data name="ScreensAll" xml:space="preserve">
     <value>所有屏幕</value>
   </data>
+  <data name="HoldTitle.Text" xml:space="preserve">
+    <value>扩大热角区域</value>
+  </data>
+  <data name="HoldDescription.Text" xml:space="preserve">
+    <value>在每个有热角的屏幕上设置屏障，让热角更容易触发</value>
+  </data>
+  <data name="HoldSwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>扩大热角区域</value>
+  </data>
   <data name="MirrorTitle.Text" xml:space="preserve">
     <value>从右到左时镜像</value>
   </data>

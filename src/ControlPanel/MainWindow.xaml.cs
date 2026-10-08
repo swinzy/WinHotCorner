@@ -70,6 +70,7 @@ public sealed partial class MainWindow : Window
         ShowState(FullscreenSwitch, FullscreenState);
         ShowState(MouseDownSwitch, MouseDownState);
         ShowState(RightToLeftSwitch, RightToLeftState);
+        ShowState(HoldSwitch, HoldState);
 
         // Right to left, the hot corner can be the top-right one: the choice shows only then
         _rightToLeft = InterfaceDirection.IsRightToLeft();
@@ -140,6 +141,8 @@ public sealed partial class MainWindow : Window
             ShowScreenLabels();
             ScreensBox.SelectedIndex = Array.IndexOf(ScreenChoices, _config.Screens);
             ScreensBox.IsEnabled = !_managed.Contains(nameof(Configuration.Screens));
+            HoldSwitch.IsOn = _config.ExpandHotCornerArea;
+            HoldSwitch.IsEnabled = !_managed.Contains(nameof(Configuration.ExpandHotCornerArea));
             RightToLeftSwitch.IsOn = _config.MirrorForRightToLeft;
             RightToLeftSwitch.IsEnabled = !_managed.Contains(nameof(Configuration.MirrorForRightToLeft));
             FullscreenSwitch.IsOn = _config.DisableWhenFullscreen;
@@ -148,7 +151,7 @@ public sealed partial class MainWindow : Window
             MouseDownSwitch.IsEnabled = !_managed.Contains(nameof(Configuration.DisableWhenMouseDown));
             ThresholdBox.Value = _config.PressureThreshold;
             ThresholdBox.IsEnabled = !_managed.Contains(nameof(Configuration.PressureThreshold));
-            ResetButton.IsEnabled = ScreensBox.IsEnabled || RightToLeftSwitch.IsEnabled || FullscreenSwitch.IsEnabled || MouseDownSwitch.IsEnabled || ThresholdBox.IsEnabled;
+            ResetButton.IsEnabled = ScreensBox.IsEnabled || HoldSwitch.IsEnabled || RightToLeftSwitch.IsEnabled || FullscreenSwitch.IsEnabled || MouseDownSwitch.IsEnabled || ThresholdBox.IsEnabled;
 
             NotInstalledInfo.IsOpen = !installed;
             PolicyInfo.IsOpen = _managed.Count > 0;
@@ -213,6 +216,12 @@ public sealed partial class MainWindow : Window
         await Task.Run(StartHotCorner);
         RunNowButton.IsEnabled = true;
         UpdateStatus();
+    }
+
+    private void HoldSwitch_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (!_loading)
+            ConfigManager.SetUserValue(nameof(Configuration.ExpandHotCornerArea), HoldSwitch.IsOn ? 1 : 0);
     }
 
     private void RightToLeftSwitch_Toggled(object sender, RoutedEventArgs e)
@@ -289,6 +298,7 @@ public sealed partial class MainWindow : Window
     private void ResetButton_Click(object sender, RoutedEventArgs e)
     {
         ConfigManager.ClearUserValue(nameof(Configuration.Screens));
+        ConfigManager.ClearUserValue(nameof(Configuration.ExpandHotCornerArea));
         ConfigManager.ClearUserValue(nameof(Configuration.MirrorForRightToLeft));
         ConfigManager.ClearUserValue(nameof(Configuration.DisableWhenFullscreen));
         ConfigManager.ClearUserValue(nameof(Configuration.DisableWhenMouseDown));

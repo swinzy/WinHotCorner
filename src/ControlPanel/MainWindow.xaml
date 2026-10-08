@@ -71,6 +71,24 @@
                               x:Uid="ScreensBox" SelectionChanged="ScreensBox_SelectionChanged" />
                 </Grid>
 
+                <Grid Style="{StaticResource CardStyle}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <FontIcon Glyph="&#xE7FA;" Style="{StaticResource CardIconStyle}" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock x:Uid="HoldTitle" />
+                        <TextBlock x:Uid="HoldDescription" Style="{StaticResource CardDescriptionStyle}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                        <TextBlock x:Name="HoldState" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+                        <ToggleSwitch x:Name="HoldSwitch" x:Uid="HoldSwitch" Style="{StaticResource CardToggleSwitchStyle}"
+                                      Toggled="HoldSwitch_Toggled" />
+                    </StackPanel>
+                </Grid>
+
                 <!-- Only when Windows' display language is written right to left -->
                 <Grid x:Name="RightToLeftCard" Style="{StaticResource CardStyle}" Visibility="Collapsed">
                     <Grid.ColumnDefinitions>

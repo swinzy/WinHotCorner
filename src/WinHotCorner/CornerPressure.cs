@@ -108,6 +108,15 @@ namespace WinHotCorner
         }
 
         /// <summary>
+        /// Whether a position on this corner's monitor is within its edges, where GNOME's barriers stop the pointer
+        /// </summary>
+        public bool IsAtCorner(POINT pt)
+        {
+            pt = Mirror(pt);
+            return pt.X >= Corner.X && pt.Y >= Corner.Y && pt.X < Corner.X + _edgeLength && pt.Y < Corner.Y + _edgeLength;
+        }
+
+        /// <summary>
         /// A position as if the corner were a top-left one: mirrored around it for a top-right corner
         /// </summary>
         private POINT Mirror(POINT pt) => Corner.RightToLeft ? new POINT { X = 2 * Corner.X - pt.X, Y = pt.Y } : pt;
