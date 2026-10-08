@@ -58,7 +58,7 @@ GNOME stops the pointer at a covered primary corner with a pointer barrier. Wind
 
 ### When it does not trigger
 
-- An app is fullscreen on that corner's monitor (if *Disable when fullscreen* is on). Task View itself is exempt, so pushing again closes it.
+- An app is fullscreen on that corner's monitor (if *Disable when fullscreen* is on). Task View itself is exempt, so pushing again closes it, and so is the desktop; its window is looked up every time, as it is a new one after Explorer restarts.
 - A mouse button is held (if *Disable when mouse button is down* is on).
 
 ## Opening Task View
