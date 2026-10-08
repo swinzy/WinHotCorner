@@ -1,7 +1,7 @@
 ﻿<Window x:Class="WinHotCorner.ControlPanel.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="WinHotCorner Control Panel">
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Text comes from Strings\<language>\Resources.resw: x:Uid here, ResourceLoader in code -->
 
     <Window.SystemBackdrop>
         <MicaBackdrop />
@@ -20,17 +20,14 @@
                     </Grid.ColumnDefinitions>
                     <StackPanel VerticalAlignment="Center">
                         <TextBlock Text="WinHotCorner" Style="{StaticResource SubtitleTextBlockStyle}" />
-                        <TextBlock Text="Control Panel" Style="{StaticResource TitleLargeTextBlockStyle}" />
+                        <TextBlock x:Uid="HeaderTitle" Style="{StaticResource TitleLargeTextBlockStyle}" />
                     </StackPanel>
                     <Image Grid.Column="1" Source="ms-appx:///Assets/Logo.png" Width="160" Height="160" FlowDirection="LeftToRight"
                            AutomationProperties.AccessibilityView="Raw" />
                 </Grid>
 
-                <InfoBar x:Name="NotInstalledInfo" Severity="Warning" IsClosable="False"
-                         Title="The hot corner is not installed"
-                         Message="Install WinHotCorner to use these settings." />
-                <InfoBar x:Name="PolicyInfo" Severity="Informational" IsClosable="False"
-                         Title="Some settings are managed by your organization" />
+                <InfoBar x:Name="NotInstalledInfo" x:Uid="NotInstalledInfo" Severity="Warning" IsClosable="False" />
+                <InfoBar x:Name="PolicyInfo" x:Uid="PolicyInfo" Severity="Informational" IsClosable="False" />
 
                 <Grid Style="{StaticResource CardStyle}">
                     <Grid.ColumnDefinitions>
@@ -40,19 +37,19 @@
                     </Grid.ColumnDefinitions>
                     <FontIcon Glyph="&#xE7C4;" Style="{StaticResource CardIconStyle}" />
                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                        <TextBlock Text="Hot corner" />
+                        <TextBlock x:Uid="HotCornerTitle" />
                         <TextBlock x:Name="StatusText" Style="{StaticResource CardDescriptionStyle}" />
                     </StackPanel>
                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                        <Button x:Name="RunNowButton" Content="Run now" VerticalAlignment="Center" Visibility="Collapsed"
+                        <Button x:Name="RunNowButton" x:Uid="RunNowButton" VerticalAlignment="Center" Visibility="Collapsed"
                                 Click="RunNowButton_Click" />
                         <TextBlock x:Name="EnabledState" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
-                        <ToggleSwitch x:Name="EnabledSwitch" Style="{StaticResource CardToggleSwitchStyle}"
-                                      AutomationProperties.Name="Hot corner" Toggled="EnabledSwitch_Toggled" />
+                        <ToggleSwitch x:Name="EnabledSwitch" x:Uid="EnabledSwitch" Style="{StaticResource CardToggleSwitchStyle}"
+                                      Toggled="EnabledSwitch_Toggled" />
                     </StackPanel>
                 </Grid>
 
-                <TextBlock Text="Preferences" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="1,28,0,8" />
+                <TextBlock x:Uid="PreferencesHeader" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="1,28,0,8" />
 
                 <!-- The choices are too long to sit next to the text, so the box goes below it -->
                 <Grid Style="{StaticResource CardStyle}" RowSpacing="10">
@@ -66,17 +63,12 @@
                     </Grid.RowDefinitions>
                     <FontIcon Glyph="&#xE7F4;" Style="{StaticResource CardIconStyle}" />
                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                        <TextBlock Text="Hot corner screens" />
-                        <TextBlock Text="Determines which screens have a hot corner."
+                        <TextBlock x:Uid="ScreensTitle" />
+                        <TextBlock x:Uid="ScreensDescription"
                                    Style="{StaticResource CardDescriptionStyle}" />
                     </StackPanel>
                     <ComboBox x:Name="ScreensBox" Grid.Row="1" Grid.Column="1"
-                              AutomationProperties.Name="Hot corner screens" SelectionChanged="ScreensBox_SelectionChanged">
-                        <x:String>Primary screen only</x:String>
-                        <x:String>Screens with no top left neighbours</x:String>
-                        <x:String>Primary screen and screens with no top left neighbours</x:String>
-                        <x:String>All screens</x:String>
-                    </ComboBox>
+                              x:Uid="ScreensBox" SelectionChanged="ScreensBox_SelectionChanged" />
                 </Grid>
 
                 <!-- Only when Windows' display language is written right to left -->
@@ -88,14 +80,14 @@
                     </Grid.ColumnDefinitions>
                     <FontIcon Glyph="&#xE8AB;" Style="{StaticResource CardIconStyle}" />
                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                        <TextBlock Text="Mirror for right-to-left" />
-                        <TextBlock Text="Hot corner will trigger at top right corner in RTL languages"
+                        <TextBlock x:Uid="MirrorTitle" />
+                        <TextBlock x:Uid="MirrorDescription"
                                    Style="{StaticResource CardDescriptionStyle}" />
                     </StackPanel>
                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
                         <TextBlock x:Name="RightToLeftState" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
                         <ToggleSwitch x:Name="RightToLeftSwitch" Style="{StaticResource CardToggleSwitchStyle}"
-                                      AutomationProperties.Name="Mirror for right-to-left" Toggled="RightToLeftSwitch_Toggled" />
+                                      x:Uid="RightToLeftSwitch" Toggled="RightToLeftSwitch_Toggled" />
                     </StackPanel>
                 </Grid>
 
@@ -107,14 +99,14 @@
                     </Grid.ColumnDefinitions>
                     <FontIcon Glyph="&#xE740;" Style="{StaticResource CardIconStyle}" />
                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                        <TextBlock Text="Disable when fullscreen" />
-                        <TextBlock Text="Don't trigger while an app is fullscreen on that screen, for example a game or a video."
+                        <TextBlock x:Uid="FullscreenTitle" />
+                        <TextBlock x:Uid="FullscreenDescription"
                                    Style="{StaticResource CardDescriptionStyle}" />
                     </StackPanel>
                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
                         <TextBlock x:Name="FullscreenState" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
                         <ToggleSwitch x:Name="FullscreenSwitch" Style="{StaticResource CardToggleSwitchStyle}"
-                                      AutomationProperties.Name="Disable when fullscreen" Toggled="FullscreenSwitch_Toggled" />
+                                      x:Uid="FullscreenSwitch" Toggled="FullscreenSwitch_Toggled" />
                     </StackPanel>
                 </Grid>
 
@@ -126,14 +118,14 @@
                     </Grid.ColumnDefinitions>
                     <FontIcon Glyph="&#xE962;" Style="{StaticResource CardIconStyle}" />
                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                        <TextBlock Text="Disable when mouse button is down" />
-                        <TextBlock Text="Don't trigger while a mouse button is held, for example while dragging."
+                        <TextBlock x:Uid="MouseDownTitle" />
+                        <TextBlock x:Uid="MouseDownDescription"
                                    Style="{StaticResource CardDescriptionStyle}" />
                     </StackPanel>
                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
                         <TextBlock x:Name="MouseDownState" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
                         <ToggleSwitch x:Name="MouseDownSwitch" Style="{StaticResource CardToggleSwitchStyle}"
-                                      AutomationProperties.Name="Disable when mouse button is down" Toggled="MouseDownSwitch_Toggled" />
+                                      x:Uid="MouseDownSwitch" Toggled="MouseDownSwitch_Toggled" />
                     </StackPanel>
                 </Grid>
 
@@ -145,16 +137,16 @@
                     </Grid.ColumnDefinitions>
                     <FontIcon Glyph="&#xE7C9;" Style="{StaticResource CardIconStyle}" />
                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                        <TextBlock Text="Pressure" />
+                        <TextBlock x:Uid="PressureTitle" />
                         <TextBlock x:Name="ThresholdDescription" Style="{StaticResource CardDescriptionStyle}"
-                                   Text="How hard to push into the corner. Higher needs a harder push." />
+                                   x:Uid="PressureDescription" />
                     </StackPanel>
                     <NumberBox x:Name="ThresholdBox" Grid.Column="2" Width="150" VerticalAlignment="Center"
                                SpinButtonPlacementMode="Inline" SmallChange="10" LargeChange="50"
-                               AutomationProperties.Name="Pressure" ValueChanged="ThresholdBox_ValueChanged" />
+                               x:Uid="ThresholdBox" ValueChanged="ThresholdBox_ValueChanged" />
                 </Grid>
 
-                <Button x:Name="ResetButton" Content="Reset preferences" HorizontalAlignment="Right" Margin="0,12,0,0"
+                <Button x:Name="ResetButton" x:Uid="ResetButton" HorizontalAlignment="Right" Margin="0,12,0,0"
                         Click="ResetButton_Click" />
 
             </StackPanel>

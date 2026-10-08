@@ -5,6 +5,9 @@
     <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.18362.0</TargetPlatformMinVersion>
     <RootNamespace>WinHotCorner.ControlPanel</RootNamespace>
+    <!-- English in the project's Australian spelling: for every English but en-US (Strings\en-US, US spelling), and for
+         languages without a translation -->
+    <DefaultLanguage>en</DefaultLanguage>
     <AssemblyName>WinHotCornerControlPanel</AssemblyName>
     <ApplicationIcon>..\WinHotCorner\WHC.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>

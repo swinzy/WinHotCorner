@@ -8,6 +8,7 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.Windows.ApplicationModel.Resources;
 using Windows.Graphics;
 
 namespace WinHotCorner.ControlPanel;
@@ -43,13 +44,13 @@ public sealed partial class MainWindow : Window
     private static readonly HotCornerScreens[] ScreenChoices =
         [HotCornerScreens.Primary, HotCornerScreens.Free, HotCornerScreens.PrimaryAndFree, HotCornerScreens.All];
 
+    /// <summary>
+    /// The text in the user's language (Strings\&lt;language&gt;\Resources.resw)
+    /// </summary>
+    private static readonly ResourceLoader Strings = new();
+
     private readonly DispatcherQueueTimer _statusTimer;
     private readonly bool _rightToLeft;
-
-    /// <summary>
-    /// The choices of <see cref="ScreensBox"/> as written in the XAML, for the top-left corner
-    /// </summary>
-    private readonly string[] _screenLabels;
     private Configuration _config = new();
     private ISet<string> _managed = new HashSet<string>();
 
@@ -61,9 +62,7 @@ public sealed partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        _screenLabels = new string[ScreensBox.Items.Count];
-        for (int i = 0; i < _screenLabels.Length; i++)
-            _screenLabels[i] = (string)ScreensBox.Items[i];
+        Title = Strings.GetString("WindowTitle");
         AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "WHC.ico"));
         ResizeAndCenter();
 
@@ -101,8 +100,8 @@ public sealed partial class MainWindow : Window
     /// </summary>
     private static void ShowState(ToggleSwitch toggle, TextBlock state)
     {
-        state.Text = toggle.IsOn ? "On" : "Off";
-        toggle.Toggled += (sender, e) => state.Text = toggle.IsOn ? "On" : "Off";
+        state.Text = Strings.GetString(toggle.IsOn ? "On" : "Off");
+        toggle.Toggled += (sender, e) => state.Text = Strings.GetString(toggle.IsOn ? "On" : "Off");
     }
 
     /// <summary>
@@ -166,15 +165,19 @@ public sealed partial class MainWindow : Window
     /// </summary>
     private void UpdateStatus()
     {
+        bool notRunning = false;
         if (!File.Exists(HotCornerExe))
-            StatusText.Text = "Not installed";
+            StatusText.Text = Strings.GetString("StatusNotInstalled");
         else if (!_config.Enabled)
-            StatusText.Text = _managed.Contains(nameof(Configuration.Enabled)) ? "Turned off by your organization" : "";
+            StatusText.Text = _managed.Contains(nameof(Configuration.Enabled)) ? Strings.GetString("StatusTurnedOff") : "";
         else
-            StatusText.Text = HotCornerControl.IsRunning() ? "" : "Not running";
+        {
+            notRunning = !HotCornerControl.IsRunning();
+            StatusText.Text = notRunning ? Strings.GetString("StatusNotRunning") : "";
+        }
 
         StatusText.Visibility = StatusText.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
-        RunNowButton.Visibility = StatusText.Text == "Not running" ? Visibility.Visible : Visibility.Collapsed;
+        RunNowButton.Visibility = notRunning ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void EnabledSwitch_Toggled(object sender, RoutedEventArgs e)
@@ -222,20 +225,29 @@ public sealed partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Says top right instead of top left in the screen choices when the hot corner is the top-right one
+    /// Fills in the screen choices, saying top right instead of top left when the hot corner is the top-right one
     /// </summary>
     private void ShowScreenLabels()
     {
-        bool topRight = _rightToLeft && _config.MirrorForRightToLeft;
+        string side = _rightToLeft && _config.MirrorForRightToLeft ? "TopRight" : "";
+        string[] labels =
+        [
+            Strings.GetString("ScreensPrimary"),
+            Strings.GetString("ScreensFree" + side),
+            Strings.GetString("ScreensPrimaryAndFree" + side),
+            Strings.GetString("ScreensAll"),
+        ];
+
         // Replacing the selected item clears the selection: put it back, without writing it
         bool loading = _loading;
         _loading = true;
         int selected = ScreensBox.SelectedIndex;
-        for (int i = 0; i < _screenLabels.Length; i++)
+        for (int i = 0; i < labels.Length; i++)
         {
-            string label = topRight ? _screenLabels[i].Replace("top left", "top right") : _screenLabels[i];
-            if ((string)ScreensBox.Items[i] != label)
-                ScreensBox.Items[i] = label;
+            if (i >= ScreensBox.Items.Count)
+                ScreensBox.Items.Add(labels[i]);
+            else if ((string)ScreensBox.Items[i] != labels[i])
+                ScreensBox.Items[i] = labels[i];
         }
         ScreensBox.SelectedIndex = selected;
         _loading = loading;

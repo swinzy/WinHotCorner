@@ -12,7 +12,7 @@ Planned work and open questions. See [docs/technical.md](docs/technical.md) for 
 
 ## Translations
 
-- [ ] **Translate the control panel and the installers.** The control panel's text is written straight into `MainWindow.xaml` and `MainWindow.xaml.cs`; WinUI can load it from `.resw` resources instead (`x:Uid` in XAML, `ResourceLoader` in code), one file per language. Inno Setup has its own `[Languages]` and `[CustomMessages]` sections for the installers. The English text currently uses Windows' US spelling ("managed by your organization"), to match Windows' own settings pages; when it moves into resources, the English text switches to the project's Australian spelling ("organisation").
+- [ ] **More languages.** English, Chinese (Simplified and Traditional) and Spanish (Latin American and Spain's) are done; see [docs/technical.md](docs/technical.md#translations) for what a new language needs.
 
 ## Multiple monitors experience improvement
 

@@ -1,0 +1,123 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="WindowTitle" xml:space="preserve">
+    <value>Panel de control de WinHotCorner</value>
+  </data>
+  <data name="HeaderTitle.Text" xml:space="preserve">
+    <value>Panel de control</value>
+  </data>
+  <data name="NotInstalledInfo.Title" xml:space="preserve">
+    <value>La esquina activa no está instalada</value>
+  </data>
+  <data name="NotInstalledInfo.Message" xml:space="preserve">
+    <value>Instala WinHotCorner para usar esta configuración.</value>
+  </data>
+  <data name="PolicyInfo.Title" xml:space="preserve">
+    <value>Tu organización administra algunas opciones de configuración</value>
+  </data>
+  <data name="HotCornerTitle.Text" xml:space="preserve">
+    <value>Esquina activa</value>
+  </data>
+  <data name="EnabledSwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Esquina activa</value>
+  </data>
+  <data name="RunNowButton.Content" xml:space="preserve">
+    <value>Ejecutar ahora</value>
+  </data>
+  <data name="On" xml:space="preserve">
+    <value>Activado</value>
+  </data>
+  <data name="Off" xml:space="preserve">
+    <value>Desactivado</value>
+  </data>
+  <data name="StatusNotInstalled" xml:space="preserve">
+    <value>No instalada</value>
+  </data>
+  <data name="StatusTurnedOff" xml:space="preserve">
+    <value>Desactivada por tu organización</value>
+  </data>
+  <data name="StatusNotRunning" xml:space="preserve">
+    <value>No se está ejecutando</value>
+  </data>
+  <data name="PreferencesHeader.Text" xml:space="preserve">
+    <value>Preferencias</value>
+  </data>
+  <data name="ScreensTitle.Text" xml:space="preserve">
+    <value>Pantallas con esquina activa</value>
+  </data>
+  <data name="ScreensDescription.Text" xml:space="preserve">
+    <value>Determina qué pantallas tienen una esquina activa.</value>
+  </data>
+  <data name="ScreensBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Pantallas con esquina activa</value>
+  </data>
+  <data name="ScreensPrimary" xml:space="preserve">
+    <value>Solo la pantalla principal</value>
+  </data>
+  <data name="ScreensFree" xml:space="preserve">
+    <value>Pantallas sin vecinas en la esquina superior izquierda</value>
+  </data>
+  <data name="ScreensFreeTopRight" xml:space="preserve">
+    <value>Pantallas sin vecinas en la esquina superior derecha</value>
+  </data>
+  <data name="ScreensPrimaryAndFree" xml:space="preserve">
+    <value>Pantalla principal y pantallas sin vecinas en la esquina superior izquierda</value>
+  </data>
+  <data name="ScreensPrimaryAndFreeTopRight" xml:space="preserve">
+    <value>Pantalla principal y pantallas sin vecinas en la esquina superior derecha</value>
+  </data>
+  <data name="ScreensAll" xml:space="preserve">
+    <value>Todas las pantallas</value>
+  </data>
+  <data name="MirrorTitle.Text" xml:space="preserve">
+    <value>Reflejar para idiomas de derecha a izquierda</value>
+  </data>
+  <data name="MirrorDescription.Text" xml:space="preserve">
+    <value>En los idiomas de derecha a izquierda, la esquina activa estará en la esquina superior derecha</value>
+  </data>
+  <data name="RightToLeftSwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Reflejar para idiomas de derecha a izquierda</value>
+  </data>
+  <data name="FullscreenTitle.Text" xml:space="preserve">
+    <value>Desactivar en pantalla completa</value>
+  </data>
+  <data name="FullscreenDescription.Text" xml:space="preserve">
+    <value>No se activa mientras una aplicación está en pantalla completa en esa pantalla, por ejemplo, un juego o un video.</value>
+  </data>
+  <data name="FullscreenSwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Desactivar en pantalla completa</value>
+  </data>
+  <data name="MouseDownTitle.Text" xml:space="preserve">
+    <value>Desactivar al mantener presionado un botón del mouse</value>
+  </data>
+  <data name="MouseDownDescription.Text" xml:space="preserve">
+    <value>No se activa mientras se mantiene presionado un botón del mouse, por ejemplo, al arrastrar.</value>
+  </data>
+  <data name="MouseDownSwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Desactivar al mantener presionado un botón del mouse</value>
+  </data>
+  <data name="PressureTitle.Text" xml:space="preserve">
+    <value>Presión</value>
+  </data>
+  <data name="PressureDescription.Text" xml:space="preserve">
+    <value>Cuánto hay que empujar el puntero contra la esquina. Un valor más alto requiere empujar con más fuerza.</value>
+  </data>
+  <data name="ThresholdBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Presión</value>
+  </data>
+  <data name="ResetButton.Content" xml:space="preserve">
+    <value>Restablecer preferencias</value>
+  </data>
+</root>

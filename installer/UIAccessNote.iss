@@ -12,21 +12,33 @@ procedure AddUIAccessNote();
 var
   Frame: TBevel;
   Note: TNewLinkLabel;
+  Measure: TNewStaticText;
   Page: TWizardPage;
-  Url: String;
+  Url, Text: String;
 begin
   Page := PageFromID(wpSelectTasks);
   Url := 'https://github.com/swinzy/WinHotCorner/blob/main/docs/digital-signature.md';
+
+  Text := CustomMessage('SignNote') + #13#10#13#10 + FmtMessage(CustomMessage('SignNoteMore'), [Url]);
 
   Note := TNewLinkLabel.Create(Page);
   Note.Parent := Page.Surface;
   Note.AutoSize := False;
   Note.Left := WizardForm.TasksList.Left + ScaleX(12);
   Note.Width := WizardForm.TasksList.Width - ScaleX(24);
-  Note.Height := ScaleY(80);
-  Note.Caption := 'This will enable WinHotCorner to run without administrator rights and show its ripple effect ' +
-    'normally. A one-time digital certificate will be used to sign this copy of WinHotCorner.' + #13#10#13#10 +
-    'For more information, please visit: <a href="' + Url + '">' + Url + '</a>';
+  Note.Caption := CustomMessage('SignNote') + #13#10#13#10 +
+    FmtMessage(CustomMessage('SignNoteMore'), ['<a href="' + Url + '">' + Url + '</a>']);
+
+  // As tall as the text needs in this language: measured with a label of the same width and font
+  Measure := TNewStaticText.Create(Page);
+  Measure.Parent := Page.Surface;
+  Measure.Visible := False;
+  Measure.AutoSize := False;
+  Measure.WordWrap := True;
+  Measure.Width := Note.Width;
+  Measure.Caption := Text;
+  Measure.AdjustHeight();
+  Note.Height := Measure.Height;
   Note.OnLinkClick := @UIAccessNoteLinkClick;
 
   // The task list keeps the room its one task needs, the note goes below it

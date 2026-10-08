@@ -53,6 +53,8 @@ The installers are not signed yet, so Windows may show a SmartScreen warning: ch
 
 **Requirements**: Windows 10 version 1903 or later, or Windows 11; 64-bit.
 
+**Languages**: English, 简体中文, 繁體中文 and Español, following Windows' display language.
+
 ## Settings
 
 Open **WinHotCorner Control Panel** from the Start menu to:
