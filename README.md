@@ -18,15 +18,17 @@ Classic GNOME hot corner function for Windows!
 ![Windows 11](https://img.shields.io/badge/Designed%20for%20Windows%2011-%230079d5.svg?style=flat-square&logo=Windows%2011&logoColor=white)
 ![Inkscape](https://img.shields.io/badge/Inkscape-e0e0e0?style=flat-square&logo=inkscape&logoColor=080A13)
 
-<img src="res/controlpanel_scrshot.png" alt="WinHotCorner Control Panel" width="640px"/>
+<img src="res/controlpanel_scrshot.webp" alt="WinHotCorner Control Panel" width="640px"/>
 
 </div>
 
 ## What it does
 
-Push the mouse pointer into the top-left corner of a screen (top-right when Windows is in a right-to-left language, as on GNOME; the control panel can change that back) and Task View opens, just like the Activities overview on GNOME. No keyboard needed.
+Push the mouse pointer into the top-left corner of a screen and Task View opens, just like the Activities overview on GNOME.
 
-It feels like GNOME too: the corner reacts to a deliberate push, not to the pointer just passing by, and it waits until you move away before it can trigger again.
+> [!TIP]
+> - It only reacts to a deliberate push, not to the pointer just passing by.
+> - Fully supports multi-screen setups
 
 ## Philosophy
 
@@ -43,50 +45,35 @@ Download **one** installer from [Releases](https://github.com/swinzy/WinHotCorne
 | **`WinHotCorner-Full-<version>-setup.exe`** | the hot corner **and** the control panel | Recommended |
 | **`WinHotCorner-HotCornerOnly-<version>-setup.exe`** | the hot corner only (about 2 MB) | If you don't want the control panel |
 
-You never need both: *Full* already contains the hot corner. If you installed *HotCornerOnly* and want the control panel later, just run *Full*: it adds the control panel and leaves the hot corner as it is (it only updates it if *Full* is newer).
+> [!TIP]
+> You can always add the **control panel** to a **hot corner only** install by running the **full** installer (yes we thought of that).
 
-The hot corner starts right away and from then on whenever you sign in. In *Installed apps* the two parts appear as *WinHotCorner* and *WinHotCorner Control Panel*.
+The hot corner starts right away and whenever you sign in.
 
-Setup offers to **sign WinHotCorner on this computer** (on by default). Signed, it runs without administrator rights, also works with administrator windows in front on standard accounts (not officially tested), and its ripple shows above Task View. Setup makes a certificate on your computer that can sign nothing else, because its private key is deleted right after signing; see [Signing WinHotCorner on your computer](docs/digital-signature.md). If signing is not possible (some company policies do not allow it), Setup installs it the usual way and says so. To change your mind, run Setup again; uninstalling removes the certificate.
+By default, Setup signs WinHotCorner on your computer, so it runs without administrator rights and its ripple shows above Task View; see [Signing WinHotCorner on your computer](docs/digital-signature.md).
 
-The installers are not signed yet, so Windows may show a SmartScreen warning: choose *More info* → *Run anyway*.
+The installers themselves are not signed, so Windows may show a SmartScreen warning: choose *More info* → *Run anyway*.
 
-**Requirements**: Windows 10 version 1903 or later, or Windows 11; 64-bit.
-
-**Languages**: English, 简体中文, 繁體中文 and Español, following Windows' display language.
+Windows 10 version 1903 or later, or Windows 11, 64-bit. In English, 简体中文, 繁體中文 and Español.
 
 ## Settings
 
 Open **WinHotCorner Control Panel** from the Start menu to:
 
 - turn the hot corner off or on,
-- choose which screens have a hot corner,
-- keep it from triggering while an app is fullscreen on that screen (games, videos), or while a mouse button is held (dragging),
+- choose which screens have a hot corner (by default, as on GNOME: the primary screen and every screen with no other screen at its top left),
+- hold the pointer at a corner with another screen next to it (*Expand hot corner area*, on by default),
+- keep it from triggering while an app is fullscreen on that screen, or while a mouse button is held,
 - change how hard you have to push into the corner.
 
-Changes apply immediately. Without the control panel, the hot corner works with its defaults; settings can also be set in the registry or by Group Policy, see the [technical notes](docs/technical.md#configuration).
+Changes apply immediately. Settings can also be set in the registry or by Group Policy, see the [technical notes](docs/technical.md#configuration).
 
-## Turning it off or removing it
-
-- **Turn it off**: switch *Hot corner* off in the control panel. It stays off, also after signing in again.
-- **Remove it**: *Settings* → *Apps* → *Installed apps* → *WinHotCorner* (and *WinHotCorner Control Panel*) → *Uninstall*.
-
-## Multiple screens
-
-As on GNOME, the primary screen has a hot corner, and so does every screen with no neighbour at its top left (no other screen directly to the left of its top-left corner or directly above it; top right and to the right in a right-to-left language). The control panel's *Hot corner screens* can change this to the primary screen only, screens with no top-left neighbour only, or all screens.
-
-A corner with another screen next to it holds the pointer as well, like on GNOME, so it works like any other (*Expand hot corner area* in the control panel, on by default). Turned off, only Windows' own "sticky corners" hold the pointer there, for a few pixels at the very top of the edge.
+To remove it: *Settings* → *Apps* → *Installed apps* → *WinHotCorner* (and *WinHotCorner Control Panel*) → *Uninstall*.
 
 ## Troubleshooting
 
-**It does not trigger while Task Manager or another app running as administrator is in front.**
-WinHotCorner runs with your highest privileges so that this works. On a standard (non-administrator) account it cannot, because Windows does not let normal programs control administrator windows, unless you let Setup sign it on your computer.
-
-**Something else is wrong.**
 Errors are written to `%LOCALAPPDATA%\WinHotCorner\WinHotCorner.log`. Please attach it to an [issue](https://github.com/swinzy/WinHotCorner/issues).
 
 ## How it works
 
-See the [technical notes](docs/technical.md): how a push is detected, configuration, startup, the installers and how to build.
-
-Planned work is in [TODO.md](https://github.com/swinzy/WinHotCorner/blob/devel/TODO.md) (on the `devel` branch, where development happens).
+See the [technical notes](docs/technical.md). Planned work is in [TODO.md](https://github.com/swinzy/WinHotCorner/blob/devel/TODO.md) (on the `devel` branch, where development happens).
