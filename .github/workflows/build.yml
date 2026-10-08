@@ -114,9 +114,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.build.outputs.file-name-version }}
+          MAJOR: ${{ steps.build.outputs.major }}
+          MINOR: ${{ steps.build.outputs.minor }}
         run: |
           trap { Write-Output "::error::$($_.Exception.Message)"; exit 1 }
           $tag = "v$env:VERSION"
+          # The title without the build number, so releases don't look like they skip versions; the tag keeps it
+          $title = "WinHotCorner $env:MAJOR.$env:MINOR"
 
           # Drafts left by failed attempts or runs
           gh release list --json tagName,isDraft --jq '.[] | select(.isDraft) | .tagName' | ForEach-Object {
@@ -129,7 +133,7 @@ jobs:
 
           # A draft first: nobody sees it, and GitHub creates the tag only when it is published
           $files = (Get-ChildItem installer\Output\*.exe).FullName
-          gh release create $tag @files --draft --target $env:GITHUB_SHA --title "WinHotCorner $env:VERSION" --notes-file $notes
+          gh release create $tag @files --draft --target $env:GITHUB_SHA --title $title --notes-file $notes
           if ($LASTEXITCODE -ne 0) { throw 'Cannot create the draft release' }
 
           $assets = gh release view $tag --json assets --jq '[.assets[] | select(.size > 0)] | length'
