@@ -6,6 +6,7 @@
 *.xaml       text eol=crlf
 *.config     text eol=crlf
 *.manifest   text eol=crlf
+*.resw       text eol=crlf
 *.iss        text eol=crlf
 *.ps1        text eol=crlf
 
@@ -17,4 +18,5 @@
 LICENSE      text eol=lf
 
 *.png        binary
+*.webp       binary
 *.ico        binary

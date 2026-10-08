@@ -52,17 +52,22 @@ GNOME's numbers are in logical pixels. The hot corner is per-monitor DPI aware (
 
 `DisplayLayout.cs` lists the monitors and decides which corners count, by the *Hot corner screens* setting (`Screens`). A corner is covered when another monitor is directly to its left or above it: the pixel just left of the corner or the pixel just above it is on another monitor. This is GNOME's test. The default is GNOME's choice: the primary monitor's corner, and every corner that is not covered. The list is rebuilt on display, DPI and setting changes.
 
-GNOME stops the pointer at a covered primary corner with a pointer barrier. Windows has no pointer barriers, but it has *sticky corners*: at the ends of an edge shared by two monitors, it holds the pointer for a few pixels (`MouseCornerClipLength` in `HKEY_CURRENT_USER\Control Panel\Desktop`, 6 when not set, 0 turns it off). So with two monitors of the same height side by side, pushing left within the top few pixels of the right monitor's corner does not cross over. Measured on Windows 11 with the right monitor at 200%: the pointer was held at the top 6 rows every time, crossed at the 7th, and diagonal flicks into the corner were held too; the 6 are physical pixels. Meanwhile the hook reports points on the left monitor, so the hot corner only learns that the pointer was held at the next event (see above). Where Windows does not hold the pointer (the clip length is 0, the monitors are not aligned), a covered corner simply never triggers. The registry value is only logged: it may not be what is in effect, as Explorer reads it when it starts.
+When Windows' display language is written right to left (Arabic, Hebrew and others; `LOCALE_IREADINGLAYOUT` of the user's UI language, `InterfaceDirection` in ConfigManager), every corner is the top-right one instead, as on GNOME, which goes by its interface language. GNOME moves its Activities button to the top right then, but Windows has no top bar to follow, so `MirrorForRightToLeft` (on by default; the control panel shows it only in a right-to-left language) can keep the top-left corner. Covered then means another monitor directly to the right or above. GNOME's points for that test look wrong right to left (`monitor.x + 1` beside the corner, and one pixel too far right above it); WinHotCorner uses the pixels next to the corner. `CornerPressure` mirrors positions around a top-right corner, so the rules above apply with the right edge in place of the left one, and the ripple is mirrored too (GNOME's `.ripple-box:rtl`).
+
+GNOME stops the pointer at a covered primary corner with a pointer barrier. Windows has no pointer barriers, but it has *sticky corners*: at the ends of an edge shared by two monitors, it holds the pointer for a few pixels (`MouseCornerClipLength` in `HKEY_CURRENT_USER\Control Panel\Desktop`, 6 when not set, 0 turns it off). So with two monitors of the same height side by side, pushing left within the top few pixels of the right monitor's corner does not cross over. Measured on Windows 11 with the right monitor at 200%: the pointer was held at the top 6 rows every time, crossed at the 7th, and diagonal flicks into the corner were held too; the 6 are physical pixels. Windows 10 (21H2) holds the same 6 pixels. Meanwhile the hook reports points on the left monitor, so the hot corner only learns that the pointer was held at the next event (see above). Monitors stacked vertically work the same way: the lower monitor's corner is held when pushing up within the clip length of its left edge, and a push further right goes on to the upper monitor. When the left monitor sits a little lower than the right one, the right monitor's corner is not covered at all (nothing is just left of it), and works like any free corner; the sticky corner is there too. Where Windows does not hold the pointer (the clip length is 0), a covered corner simply never triggers. The registry value is only logged: it may not be what is in effect, as Explorer reads it when it starts.
+
+*Expand hot corner area* (`ExpandHotCornerArea`, on by default) does what GNOME's barrier does, with `ClipCursor` (`PointerBarrier.cs`): while the pointer is within a covered corner's edges (32 logical pixels, as for the pressure), it is confined to that corner's monitor, so it is held there like at a free corner, also where Windows' sticky corners are only 6 pixels or turned off; once it moves away, it is free again. As on GNOME, a push anywhere along those 32 pixels counts. `ClipCursor` is shared with every other program, games in a window among them, so the clip is careful: it is not set while another program confines the pointer, nor while a mouse button is held (dragging a window to the other monitor; Windows' own sticky corners still hold it then, as they always do), nor while an app is fullscreen on that monitor; it is only released while it is still the one the hot corner set; Windows resets it when the foreground window changes, and it is set again on the next movement at the corner. It is released when the monitors change and when the hot corner exits, also on a crash.
 
 ### When it does not trigger
 
-- An app is fullscreen on that corner's monitor (if *Disable when fullscreen* is on). Task View itself is exempt, so pushing again closes it.
+- An app is fullscreen on that corner's monitor (if *Disable when fullscreen* is on). Task View itself is exempt, so pushing again closes it, and so is the desktop; its window is looked up every time, as it is a new one after Explorer restarts.
 - A mouse button is held (if *Disable when mouse button is down* is on).
-- Shift, Ctrl, Alt or Win is held, so it does not mix into a shortcut the user is pressing.
 
 ## Opening Task View
 
-Windows has no public function to open Task View, so the hot corner sends Win+Tab with `SendInput` (`TaskView.cs`), as one uninterrupted sequence. If Windows accepts only part of it, the keys that went down are released, with an unassigned key (`0xE8`) tapped first so that a lone Win release does not open the Start menu.
+`TaskView.cs` asks the shell to open Task View: `Shell.Application`'s `WindowSwitcher` (`IShellDispatch5`), a documented function that opens Task View on Windows 10 and 11, or closes it when it is open, as pushing into the corner again should. It is as fast as Win+Tab (about 40 ms until Task View is in front, measured on Windows Server 2025), starts no process, and sends no keystroke, so a key the user holds does not matter and UIPI does not stand in the way. The object is created once and kept; if a call fails (Explorer restarted, for example), it is created again once.
+
+If the shell cannot do it, the hot corner sends Win+Tab with `SendInput` instead, as one uninterrupted sequence, unless Shift, Ctrl, Alt or Win is held (it would mix into a shortcut the user is pressing). If Windows accepts only part of it, the keys that went down are released, with an unassigned key (`0xE8`) tapped first so that a lone Win release does not open the Start menu.
 
 ## Ripple
 
@@ -78,6 +83,8 @@ Settings are DWORD values in `HKEY_CURRENT_USER\Software\WinHotCorner`, written 
 |---|---|---|---|
 | `Enabled` | 0 or 1 | 1 | 0 makes the hot corner exit, at startup or while running |
 | `PressureThreshold` | 10 to 1000 | 100 | Pressure needed to trigger, in logical pixels |
+| `MirrorForRightToLeft` | 0 or 1 | 1 | In a right-to-left display language, use the top-right corner (as GNOME) instead of the top-left one |
+| `ExpandHotCornerArea` | 0 or 1 | 1 | *Expand hot corner area*: hold the pointer at covered corners with `ClipCursor`, as GNOME's barrier does |
 | `Screens` | 0 to 3 | 0 | Which screens have a hot corner: 0 the primary screen and every screen whose corner is not covered (GNOME), 1 the primary screen only, 2 only screens whose corner is not covered, 3 all screens |
 | `DisableWhenFullscreen` | 0 or 1 | 1 | |
 | `DisableWhenMouseDown` | 0 or 1 | 1 | |
@@ -129,12 +136,23 @@ Only one hot corner runs per session (a named mutex).
 
 The control panel writes only the value that changed, so it never copies a Group Policy value into the user's settings.
 
+In a right-to-left display language the control panel is laid out right to left, as Windows' own apps are: WinUI does not do that by itself, so it sets `WS_EX_LAYOUTRTL` on the window (the title bar) and `FlowDirection` on the content; the logo keeps its direction.
+
 ## Installers
 
 Both are Inno Setup 7 scripts in `installer`, published as two downloads:
 
 - `WinHotCorner.iss` builds **`WinHotCorner-HotCornerOnly-<version>-setup.exe`**: the hot corner. Installs to `Program Files\WinHotCorner`, registers the scheduled task, or signs it and adds it to the Run key with the `uiaccess` task (see [Startup and privileges](#startup-and-privileges)), and starts it. Inno Setup remembers the task, so an update keeps the choice. Before installing, upgrading or uninstalling it stops the hot corner in every session and waits until it has exited. Uninstalling keeps the user's settings.
 - `ControlPanel.iss` builds **`WinHotCorner-Full-<version>-setup.exe`**: the control panel, in `Program Files\WinHotCorner\ControlPanel`, with a Start menu shortcut. It contains the hot corner installer and runs it silently when the hot corner is missing or older, so it can install both. It offers the same `uiaccess` task, starting from what the hot corner installer recorded (Inno Setup keeps both the chosen and the declined tasks; without either, from a version before the task, the default applies, as in the hot corner installer), passes the choice on (`/MERGETASKS`), and also runs the hot corner installer when the choice changes. A silent run without tasks on the command line keeps the hot corner's choice. If signing failed, it says so once the hot corner installer has finished. Each product has its own entry in Installed apps and can be uninstalled alone.
+
+## Translations
+
+The control panel and the installers are in English, Simplified Chinese, Traditional Chinese and Spanish (Latin American and Spain's), in the language of Windows' display language; anything else gets English.
+
+- **Control panel**: `src/ControlPanel/Strings/<language>/Resources.resw`. `en` is in the project's Australian spelling and is the default language (`DefaultLanguage`), so it also covers every other English and the languages without a translation; `en-US` is the same in US spelling. `zh-Hans` and `zh-Hant`: the script tags also cover Singapore, Hong Kong and Macao. `es` is Latin American Spanish, for every Spanish but Spain's; `es-ES` is Spain's (ratón, pulsado, vídeo, and the present perfect). XAML takes its text through `x:Uid` (`<Uid>.Text`, `<Uid>.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name` and so on), code through MRT Core's `ResourceLoader`: the window title, On and Off, the status line and the *Hot corner screens* choices (with separate top-right wording for right-to-left languages).
+- **Installers**: `installer/Languages.iss`, included by both scripts: the `[Languages]`, with Inno Setup's own translations of its text, and `[CustomMessages]` for WinHotCorner's text (one English, in Australian spelling). Inno Setup has one Spanish; `SpanishLatinAmerica.isl` gives it the language ID of Spanish (Mexico) for the Latin American entry. Without an exact match Setup takes the first entry with the same primary language, so the order matters: Traditional Chinese before Simplified (Hong Kong and Macao get Traditional, Singapore too), Latin American Spanish before Spain's. Setup picks the language without asking (`ShowLanguageDialog=no`); `/LANG=` chooses one.
+
+A new language needs a `Resources.resw` folder and a block of messages in `Languages.iss`. The `en-US` file is the `en` one with US spelling, and `es-ES` the `es` one in Spain's Spanish: change both. The hot corner itself shows no text.
 
 ## Versions
 

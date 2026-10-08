@@ -55,12 +55,16 @@ WizardSmallImageFile=images\wizard-small-58.png,images\wizard-small-77.png,image
 Compression=lzma2/max
 SolidCompression=yes
 CloseApplications=no
+; The language of Windows' display language, without asking
+ShowLanguageDialog=no
 ; The task belongs to the hot corner installer: start from what it has, not from this installer's last run
 UsePreviousTasks=no
 
+#include "Languages.iss"
+
 [Tasks]
 ; Same name and description as in WinHotCorner.iss
-Name: "uiaccess"; Description: "Sign WinHotCorner on this computer"
+Name: "uiaccess"; Description: "{cm:SignTask}"
 
 [Files]
 Source: "{#PublishDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
@@ -70,7 +74,7 @@ Source: "Output\{#HotCornerSetup}"; Flags: dontcopy
 Name: "{autoprograms}\{#AppName}"; Filename: "{app}\{#AppExe}"
 
 [Run]
-Filename: "{app}\{#AppExe}"; Description: "Open {#AppName}"; Flags: nowait postinstall skipifsilent runasoriginaluser
+Filename: "{app}\{#AppExe}"; Description: "{cm:OpenControlPanel,{#AppName}}"; Flags: nowait postinstall skipifsilent runasoriginaluser
 
 [Code]
 var
@@ -211,11 +215,10 @@ begin
     ExtractTemporaryFile('{#HotCornerSetup}');
     if not Exec(ExpandConstant('{tmp}\{#HotCornerSetup}'), '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /MERGETASKS="' + Tasks + '"', '',
         SW_HIDE, ewWaitUntilTerminated, ResultCode) or (ResultCode <> 0) then
-      Result := Format('Could not install WinHotCorner (exit code %d).', [ResultCode])
+      Result := FmtMessage(CustomMessage('HotCornerInstallFailed'), [IntToStr(ResultCode)])
     // It installs the usual version instead when it cannot sign, and says so only when not silent
     else if UIAccess and not HotCornerHasUIAccess() then
-      SuppressibleMsgBox('Could not sign WinHotCorner on this computer, so it was installed the usual way instead: ' +
-        'it runs with administrator rights, and its ripple shows under Task View.', mbInformation, MB_OK, IDOK);
+      SuppressibleMsgBox(FmtMessage(CustomMessage('SignFailedAfter'), ['WinHotCorner']), mbInformation, MB_OK, IDOK);
   end;
 end;
 

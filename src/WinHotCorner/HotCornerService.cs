@@ -60,6 +60,7 @@ namespace WinHotCorner
         private readonly Timer _watchdog = new Timer { Interval = WATCHDOG_INTERVAL };
         private MessageWindow _window;
         private Ripple _ripple;
+        private readonly PointerBarrier _barrier = new PointerBarrier();
         private List<CornerPressure> _corners = new List<CornerPressure>();
 
         /// <summary>
@@ -129,6 +130,7 @@ namespace WinHotCorner
             _exitEvent?.Dispose();
             _userWatcher?.Dispose();
             _policyWatcher?.Dispose();
+            PointerBarrier.Release();
             _ripple?.Dispose();
             _window?.DestroyHandle();
         }
@@ -212,20 +214,30 @@ namespace WinHotCorner
         private void OnMouseMove(POINT pt, uint time)
         {
             // Most movements are nowhere near a corner: skip them without any system call
-            bool involved = false;
-            for (int i = 0; i < _corners.Count; i++)
+            bool hold = Configuration.ExpandHotCornerArea;
+            bool involved = _barrier.IsHolding;
+            for (int i = 0; !involved && i < _corners.Count; i++)
             {
-                if (_corners[i].IsWatching || _corners[i].IsNear(pt))
-                {
+                if (_corners[i].IsWatching || _corners[i].IsNear(pt) || (hold && _corners[i].Corner.Covered && _corners[i].IsAtCorner(pt)))
                     involved = true;
-                    break;
-                }
             }
             if (!involved)
                 return;
 
             // Inside the hook the pointer has not moved yet, so this is where it is coming from
             GetCursorPos(out POINT prev);
+
+            // Before the pointer moves: a clip set now already applies to this movement
+            if (hold || _barrier.IsHolding)
+            {
+                CornerPressure at = null;
+                for (int i = 0; hold && at == null && i < _corners.Count; i++)
+                {
+                    if (_corners[i].Corner.Covered && (_corners[i].IsAtCorner(prev) || _corners[i].IsAtCorner(pt)))
+                        at = _corners[i];
+                }
+                _barrier.Update(at, _buttonsDown != 0);
+            }
 
             double threshold = Configuration.PressureThreshold;
             for (int i = 0; i < _corners.Count; i++)
@@ -252,13 +264,6 @@ namespace WinHotCorner
                 return;
             }
 
-            // Don't mix our Win+Tab into a shortcut the user is pressing
-            if (TaskView.IsModifierDown())
-            {
-                Log.Info("Not triggered: Modifier key held");
-                return;
-            }
-
             if (!TaskView.Open())
                 return;
 
@@ -277,7 +282,11 @@ namespace WinHotCorner
         /// </summary>
         private void UpdateCorners()
         {
-            List<HotCorner> corners = DisplayLayout.GetHotCorners(Configuration.Screens);
+            // The monitors may have moved: let go, the next movement at a corner holds the pointer again
+            PointerBarrier.Release();
+
+            bool rightToLeft = Configuration.MirrorForRightToLeft && InterfaceDirection.IsRightToLeft();
+            List<HotCorner> corners = DisplayLayout.GetHotCorners(Configuration.Screens, rightToLeft);
 
             bool same = corners.Count == _corners.Count;
             for (int i = 0; same && i < corners.Count; i++)

@@ -8,6 +8,7 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.Windows.ApplicationModel.Resources;
 using Windows.Graphics;
 
 namespace WinHotCorner.ControlPanel;
@@ -16,6 +17,15 @@ public sealed partial class MainWindow : Window
 {
     [DllImport("user32.dll")]
     private static extern uint GetDpiForWindow(IntPtr hwnd);
+
+    [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")]
+    private static extern IntPtr GetWindowLongPtr(IntPtr hwnd, int index);
+
+    [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")]
+    private static extern IntPtr SetWindowLongPtr(IntPtr hwnd, int index, IntPtr value);
+
+    private const int GWL_EXSTYLE = -20;
+    private const long WS_EX_LAYOUTRTL = 0x00400000;
 
     /// <summary>
     /// Initial window size, in logical pixels
@@ -34,7 +44,13 @@ public sealed partial class MainWindow : Window
     private static readonly HotCornerScreens[] ScreenChoices =
         [HotCornerScreens.Primary, HotCornerScreens.Free, HotCornerScreens.PrimaryAndFree, HotCornerScreens.All];
 
+    /// <summary>
+    /// The text in the user's language (Strings\&lt;language&gt;\Resources.resw)
+    /// </summary>
+    private static readonly ResourceLoader Strings = new();
+
     private readonly DispatcherQueueTimer _statusTimer;
+    private readonly bool _rightToLeft;
     private Configuration _config = new();
     private ISet<string> _managed = new HashSet<string>();
 
@@ -46,12 +62,21 @@ public sealed partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        Title = Strings.GetString("WindowTitle");
         AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "WHC.ico"));
         ResizeAndCenter();
 
         ShowState(EnabledSwitch, EnabledState);
         ShowState(FullscreenSwitch, FullscreenState);
         ShowState(MouseDownSwitch, MouseDownState);
+        ShowState(RightToLeftSwitch, RightToLeftState);
+        ShowState(HoldSwitch, HoldState);
+
+        // Right to left, the hot corner can be the top-right one: the choice shows only then
+        _rightToLeft = InterfaceDirection.IsRightToLeft();
+        RightToLeftCard.Visibility = _rightToLeft ? Visibility.Visible : Visibility.Collapsed;
+        if (_rightToLeft)
+            MirrorWindow();
 
         ThresholdBox.Minimum = Configuration.MIN_PRESSURE_THRESHOLD;
         ThresholdBox.Maximum = Configuration.MAX_PRESSURE_THRESHOLD;
@@ -76,8 +101,20 @@ public sealed partial class MainWindow : Window
     /// </summary>
     private static void ShowState(ToggleSwitch toggle, TextBlock state)
     {
-        state.Text = toggle.IsOn ? "On" : "Off";
-        toggle.Toggled += (sender, e) => state.Text = toggle.IsOn ? "On" : "Off";
+        state.Text = Strings.GetString(toggle.IsOn ? "On" : "Off");
+        toggle.Toggled += (sender, e) => state.Text = Strings.GetString(toggle.IsOn ? "On" : "Off");
+    }
+
+    /// <summary>
+    /// Lays the window out right to left, as Windows' own apps are in a right-to-left display language: the title bar
+    /// (its buttons on the left) and the content. WinUI does not do this by itself
+    /// </summary>
+    private void MirrorWindow()
+    {
+        IntPtr hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+        long style = GetWindowLongPtr(hwnd, GWL_EXSTYLE).ToInt64();
+        SetWindowLongPtr(hwnd, GWL_EXSTYLE, new IntPtr(style | WS_EX_LAYOUTRTL));
+        ((FrameworkElement)Content).FlowDirection = FlowDirection.RightToLeft;
     }
 
     private void ResizeAndCenter()
@@ -101,15 +138,20 @@ public sealed partial class MainWindow : Window
 
             EnabledSwitch.IsOn = _config.Enabled;
             EnabledSwitch.IsEnabled = installed && !_managed.Contains(nameof(Configuration.Enabled));
+            ShowScreenLabels();
             ScreensBox.SelectedIndex = Array.IndexOf(ScreenChoices, _config.Screens);
             ScreensBox.IsEnabled = !_managed.Contains(nameof(Configuration.Screens));
+            HoldSwitch.IsOn = _config.ExpandHotCornerArea;
+            HoldSwitch.IsEnabled = !_managed.Contains(nameof(Configuration.ExpandHotCornerArea));
+            RightToLeftSwitch.IsOn = _config.MirrorForRightToLeft;
+            RightToLeftSwitch.IsEnabled = !_managed.Contains(nameof(Configuration.MirrorForRightToLeft));
             FullscreenSwitch.IsOn = _config.DisableWhenFullscreen;
             FullscreenSwitch.IsEnabled = !_managed.Contains(nameof(Configuration.DisableWhenFullscreen));
             MouseDownSwitch.IsOn = _config.DisableWhenMouseDown;
             MouseDownSwitch.IsEnabled = !_managed.Contains(nameof(Configuration.DisableWhenMouseDown));
             ThresholdBox.Value = _config.PressureThreshold;
             ThresholdBox.IsEnabled = !_managed.Contains(nameof(Configuration.PressureThreshold));
-            ResetButton.IsEnabled = ScreensBox.IsEnabled || FullscreenSwitch.IsEnabled || MouseDownSwitch.IsEnabled || ThresholdBox.IsEnabled;
+            ResetButton.IsEnabled = ScreensBox.IsEnabled || HoldSwitch.IsEnabled || RightToLeftSwitch.IsEnabled || FullscreenSwitch.IsEnabled || MouseDownSwitch.IsEnabled || ThresholdBox.IsEnabled;
 
             NotInstalledInfo.IsOpen = !installed;
             PolicyInfo.IsOpen = _managed.Count > 0;
@@ -126,15 +168,19 @@ public sealed partial class MainWindow : Window
     /// </summary>
     private void UpdateStatus()
     {
+        bool notRunning = false;
         if (!File.Exists(HotCornerExe))
-            StatusText.Text = "Not installed";
+            StatusText.Text = Strings.GetString("StatusNotInstalled");
         else if (!_config.Enabled)
-            StatusText.Text = _managed.Contains(nameof(Configuration.Enabled)) ? "Turned off by your organization" : "";
+            StatusText.Text = _managed.Contains(nameof(Configuration.Enabled)) ? Strings.GetString("StatusTurnedOff") : "";
         else
-            StatusText.Text = HotCornerControl.IsRunning() ? "" : "Not running";
+        {
+            notRunning = !HotCornerControl.IsRunning();
+            StatusText.Text = notRunning ? Strings.GetString("StatusNotRunning") : "";
+        }
 
         StatusText.Visibility = StatusText.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
-        RunNowButton.Visibility = StatusText.Text == "Not running" ? Visibility.Visible : Visibility.Collapsed;
+        RunNowButton.Visibility = notRunning ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void EnabledSwitch_Toggled(object sender, RoutedEventArgs e)
@@ -170,6 +216,50 @@ public sealed partial class MainWindow : Window
         await Task.Run(StartHotCorner);
         RunNowButton.IsEnabled = true;
         UpdateStatus();
+    }
+
+    private void HoldSwitch_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (!_loading)
+            ConfigManager.SetUserValue(nameof(Configuration.ExpandHotCornerArea), HoldSwitch.IsOn ? 1 : 0);
+    }
+
+    private void RightToLeftSwitch_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (_loading)
+            return;
+        _config.MirrorForRightToLeft = RightToLeftSwitch.IsOn;
+        ConfigManager.SetUserValue(nameof(Configuration.MirrorForRightToLeft), _config.MirrorForRightToLeft ? 1 : 0);
+        ShowScreenLabels();
+    }
+
+    /// <summary>
+    /// Fills in the screen choices, saying top right instead of top left when the hot corner is the top-right one
+    /// </summary>
+    private void ShowScreenLabels()
+    {
+        string side = _rightToLeft && _config.MirrorForRightToLeft ? "TopRight" : "";
+        string[] labels =
+        [
+            Strings.GetString("ScreensPrimary"),
+            Strings.GetString("ScreensFree" + side),
+            Strings.GetString("ScreensPrimaryAndFree" + side),
+            Strings.GetString("ScreensAll"),
+        ];
+
+        // Replacing the selected item clears the selection: put it back, without writing it
+        bool loading = _loading;
+        _loading = true;
+        int selected = ScreensBox.SelectedIndex;
+        for (int i = 0; i < labels.Length; i++)
+        {
+            if (i >= ScreensBox.Items.Count)
+                ScreensBox.Items.Add(labels[i]);
+            else if ((string)ScreensBox.Items[i] != labels[i])
+                ScreensBox.Items[i] = labels[i];
+        }
+        ScreensBox.SelectedIndex = selected;
+        _loading = loading;
     }
 
     private void FullscreenSwitch_Toggled(object sender, RoutedEventArgs e)
@@ -208,6 +298,8 @@ public sealed partial class MainWindow : Window
     private void ResetButton_Click(object sender, RoutedEventArgs e)
     {
         ConfigManager.ClearUserValue(nameof(Configuration.Screens));
+        ConfigManager.ClearUserValue(nameof(Configuration.ExpandHotCornerArea));
+        ConfigManager.ClearUserValue(nameof(Configuration.MirrorForRightToLeft));
         ConfigManager.ClearUserValue(nameof(Configuration.DisableWhenFullscreen));
         ConfigManager.ClearUserValue(nameof(Configuration.DisableWhenMouseDown));
         ConfigManager.ClearUserValue(nameof(Configuration.PressureThreshold));

@@ -56,9 +56,13 @@ Compression=lzma2
 SolidCompression=yes
 ; Stopping the running hot corner is done in the code below
 CloseApplications=no
+; The language of Windows' display language, without asking
+ShowLanguageDialog=no
+
+#include "Languages.iss"
 
 [Tasks]
-Name: "uiaccess"; Description: "Sign WinHotCorner on this computer"
+Name: "uiaccess"; Description: "{cm:SignTask}"
 
 [Files]
 Source: "{#BinDir}\{#AppExe}"; DestDir: "{app}"; Flags: ignoreversion; Tasks: not uiaccess
@@ -98,8 +102,7 @@ begin
   Result := RegQueryDWordValue(HKLM, 'SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full', 'Release', Release)
     and (Release >= NetFx48Release);
   if not Result then
-    SuppressibleMsgBox('{#AppName} needs .NET Framework 4.8 or later, which comes with Windows 10 version 1903 and later.',
-      mbCriticalError, MB_OK, IDOK);
+    SuppressibleMsgBox(FmtMessage(CustomMessage('NeedNetFx'), ['{#AppName}']), mbCriticalError, MB_OK, IDOK);
 end;
 
 procedure RunHidden(const FileName, Params: String);
@@ -162,8 +165,7 @@ var
   Output: TArrayOfString;
 begin
   if not RunUIAccessScript(ExpandConstant('{app}\uiaccess.ps1'), '-Remove -Keep ' + Quoted(Keep), Output) then
-    SuppressibleMsgBox('Could not remove the certificate that {#AppName} made on this computer before. ' +
-      'It is named "WinHotCorner (made on this computer)" in Trusted Root Certification Authorities.', mbError, MB_OK, IDOK);
+    SuppressibleMsgBox(FmtMessage(CustomMessage('CertRemoveFailed'), ['{#AppName}']), mbError, MB_OK, IDOK);
 end;
 
 // Stops the hot corner in every session and waits until it is gone, so its files can be replaced or deleted
@@ -184,8 +186,7 @@ begin
   if WizardIsTaskSelected('uiaccess') and not SignHotCorner() then
   begin
     WizardSelectTasks('!uiaccess');
-    SuppressibleMsgBox('Could not sign {#AppName} on this computer, so it will be installed the usual way instead: it ' +
-      'runs with administrator rights, and its ripple shows under Task View.', mbInformation, MB_OK, IDOK);
+    SuppressibleMsgBox(FmtMessage(CustomMessage('SignFailedBefore'), ['{#AppName}']), mbInformation, MB_OK, IDOK);
   end;
   StopHotCorner();
 end;
@@ -267,7 +268,7 @@ begin
   XmlFile := ExpandConstant('{tmp}\{#TaskName}.xml');
   if not SaveStringToFile(XmlFile, TaskXml(), False) then
   begin
-    SuppressibleMsgBox('Could not write the startup task definition.', mbError, MB_OK, IDOK);
+    SuppressibleMsgBox(CustomMessage('TaskWriteFailed'), mbError, MB_OK, IDOK);
     Exit;
   end;
 
@@ -275,7 +276,7 @@ begin
       SW_HIDE, ewWaitUntilTerminated, ResultCode) or (ResultCode <> 0) then
   begin
     Log(Format('schtasks /Create failed with exit code %d', [ResultCode]));
-    SuppressibleMsgBox('Could not register the startup task. {#AppName} will not start at logon.', mbError, MB_OK, IDOK);
+    SuppressibleMsgBox(FmtMessage(CustomMessage('TaskRegisterFailed'), ['{#AppName}']), mbError, MB_OK, IDOK);
     Exit;
   end;
 

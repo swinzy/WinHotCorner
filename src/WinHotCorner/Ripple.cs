@@ -11,7 +11,8 @@ namespace WinHotCorner
     /// </summary>
     /// <remarks>
     /// Port of GNOME Shell's js/ui/ripples.js, drawn in the .ripple-box style of its theme: white at 20%, a 2 px
-    /// spread and 2 px blur shadow of the same colour, 52 px, scaled with the corner as the pivot.
+    /// spread and 2 px blur shadow of the same colour, 52 px, scaled with the corner as the pivot. At a top-right
+    /// corner (right to left) it is mirrored, as GNOME's .ripple-box:rtl.
     ///
     /// The ripple is a click-through layered window that never takes the focus. Task View covers ordinary topmost
     /// windows; only a window of a program with uiAccess stays above it. Without uiAccess the ripple plays all the
@@ -239,12 +240,14 @@ namespace WinHotCorner
                     }
                     // White, premultiplied
                     int v = (int)Math.Round(a * 255);
-                    _pixels[y * _size + x] = v << 24 | v << 16 | v << 8 | v;
+                    int column = _corner.RightToLeft ? _size - 1 - x : x;
+                    _pixels[y * _size + column] = v << 24 | v << 16 | v << 8 | v;
                 }
             }
             Marshal.Copy(_pixels, 0, _bits, _pixels.Length);
 
-            var position = new POINT { X = _corner.X, Y = _corner.Y };
+            // The frame's corner pixel on the corner's pixel
+            var position = new POINT { X = _corner.RightToLeft ? _corner.X - _size + 1 : _corner.X, Y = _corner.Y };
             var size = new SIZE { cx = _size, cy = _size };
             var source = new POINT();
             var blend = new BLENDFUNCTION { BlendOp = AC_SRC_OVER, SourceConstantAlpha = 255, AlphaFormat = AC_SRC_ALPHA };

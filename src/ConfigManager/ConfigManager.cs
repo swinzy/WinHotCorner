@@ -39,6 +39,8 @@ namespace WinHotCorner
                 key.SetValue(nameof(Configuration.Enabled), cfg.Enabled ? 1 : 0, RegistryValueKind.DWord);
                 key.SetValue(nameof(Configuration.PressureThreshold), cfg.PressureThreshold, RegistryValueKind.DWord);
                 key.SetValue(nameof(Configuration.Screens), (int)cfg.Screens, RegistryValueKind.DWord);
+                key.SetValue(nameof(Configuration.MirrorForRightToLeft), cfg.MirrorForRightToLeft ? 1 : 0, RegistryValueKind.DWord);
+                key.SetValue(nameof(Configuration.ExpandHotCornerArea), cfg.ExpandHotCornerArea ? 1 : 0, RegistryValueKind.DWord);
                 key.SetValue(nameof(Configuration.DisableWhenFullscreen), cfg.DisableWhenFullscreen ? 1 : 0, RegistryValueKind.DWord);
                 key.SetValue(nameof(Configuration.DisableWhenMouseDown), cfg.DisableWhenMouseDown ? 1 : 0, RegistryValueKind.DWord);
             }
@@ -74,7 +76,8 @@ namespace WinHotCorner
             {
                 using (RegistryKey policy = Registry.LocalMachine.OpenSubKey(POLICY_KEY_PATH))
                 {
-                    foreach (string name in new[] { nameof(Configuration.Enabled), nameof(Configuration.DisableWhenFullscreen), nameof(Configuration.DisableWhenMouseDown) })
+                    foreach (string name in new[] { nameof(Configuration.Enabled), nameof(Configuration.MirrorForRightToLeft),
+                        nameof(Configuration.ExpandHotCornerArea), nameof(Configuration.DisableWhenFullscreen), nameof(Configuration.DisableWhenMouseDown) })
                     {
                         if (TryRead(policy, "policy", name, 0, 1, ignored, out _))
                             names.Add(name);
@@ -110,6 +113,8 @@ namespace WinHotCorner
                     cfg.PressureThreshold = ReadInt(policy, user, nameof(Configuration.PressureThreshold), cfg.PressureThreshold,
                         Configuration.MIN_PRESSURE_THRESHOLD, Configuration.MAX_PRESSURE_THRESHOLD, problems);
                     cfg.Screens = (HotCornerScreens)ReadInt(policy, user, nameof(Configuration.Screens), (int)cfg.Screens, 0, MAX_SCREENS, problems);
+                    cfg.MirrorForRightToLeft = ReadBool(policy, user, nameof(Configuration.MirrorForRightToLeft), cfg.MirrorForRightToLeft, problems);
+                    cfg.ExpandHotCornerArea = ReadBool(policy, user, nameof(Configuration.ExpandHotCornerArea), cfg.ExpandHotCornerArea, problems);
                     cfg.DisableWhenFullscreen = ReadBool(policy, user, nameof(Configuration.DisableWhenFullscreen), cfg.DisableWhenFullscreen, problems);
                     cfg.DisableWhenMouseDown = ReadBool(policy, user, nameof(Configuration.DisableWhenMouseDown), cfg.DisableWhenMouseDown, problems);
                 }

@@ -1,0 +1,132 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="WindowTitle" xml:space="preserve">
+    <value>WinHotCorner 控制面板</value>
+  </data>
+  <data name="HeaderTitle.Text" xml:space="preserve">
+    <value>控制面板</value>
+  </data>
+  <data name="NotInstalledInfo.Title" xml:space="preserve">
+    <value>热角未安装</value>
+  </data>
+  <data name="NotInstalledInfo.Message" xml:space="preserve">
+    <value>安装 WinHotCorner 后才能使用这些设置。</value>
+  </data>
+  <data name="PolicyInfo.Title" xml:space="preserve">
+    <value>某些设置由你的组织管理</value>
+  </data>
+  <data name="HotCornerTitle.Text" xml:space="preserve">
+    <value>热角</value>
+  </data>
+  <data name="EnabledSwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>热角</value>
+  </data>
+  <data name="RunNowButton.Content" xml:space="preserve">
+    <value>立即运行</value>
+  </data>
+  <data name="On" xml:space="preserve">
+    <value>开</value>
+  </data>
+  <data name="Off" xml:space="preserve">
+    <value>关</value>
+  </data>
+  <data name="StatusNotInstalled" xml:space="preserve">
+    <value>未安装</value>
+  </data>
+  <data name="StatusTurnedOff" xml:space="preserve">
+    <value>已被你的组织关闭</value>
+  </data>
+  <data name="StatusNotRunning" xml:space="preserve">
+    <value>未运行</value>
+  </data>
+  <data name="PreferencesHeader.Text" xml:space="preserve">
+    <value>首选项</value>
+  </data>
+  <data name="ScreensTitle.Text" xml:space="preserve">
+    <value>热角所在的屏幕</value>
+  </data>
+  <data name="ScreensDescription.Text" xml:space="preserve">
+    <value>决定哪些屏幕有热角。</value>
+  </data>
+  <data name="ScreensBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>热角所在的屏幕</value>
+  </data>
+  <data name="ScreensPrimary" xml:space="preserve">
+    <value>仅主屏幕</value>
+  </data>
+  <data name="ScreensFree" xml:space="preserve">
+    <value>左上角没有相邻屏幕的屏幕</value>
+  </data>
+  <data name="ScreensFreeTopRight" xml:space="preserve">
+    <value>右上角没有相邻屏幕的屏幕</value>
+  </data>
+  <data name="ScreensPrimaryAndFree" xml:space="preserve">
+    <value>主屏幕和左上角没有相邻屏幕的屏幕</value>
+  </data>
+  <data name="ScreensPrimaryAndFreeTopRight" xml:space="preserve">
+    <value>主屏幕和右上角没有相邻屏幕的屏幕</value>
+  </data>
+  <data name="ScreensAll" xml:space="preserve">
+    <value>所有屏幕</value>
+  </data>
+  <data name="HoldTitle.Text" xml:space="preserve">
+    <value>扩大热角区域</value>
+  </data>
+  <data name="HoldDescription.Text" xml:space="preserve">
+    <value>在每个有热角的屏幕上设置屏障，让热角更容易触发</value>
+  </data>
+  <data name="HoldSwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>扩大热角区域</value>
+  </data>
+  <data name="MirrorTitle.Text" xml:space="preserve">
+    <value>从右到左时镜像</value>
+  </data>
+  <data name="MirrorDescription.Text" xml:space="preserve">
+    <value>在从右到左书写的语言中，热角将在右上角触发</value>
+  </data>
+  <data name="RightToLeftSwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>从右到左时镜像</value>
+  </data>
+  <data name="FullscreenTitle.Text" xml:space="preserve">
+    <value>全屏时停用</value>
+  </data>
+  <data name="FullscreenDescription.Text" xml:space="preserve">
+    <value>该屏幕上有应用全屏显示时（例如游戏或视频）不触发。</value>
+  </data>
+  <data name="FullscreenSwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>全屏时停用</value>
+  </data>
+  <data name="MouseDownTitle.Text" xml:space="preserve">
+    <value>按住鼠标按键时停用</value>
+  </data>
+  <data name="MouseDownDescription.Text" xml:space="preserve">
+    <value>按住鼠标按键时（例如拖动时）不触发。</value>
+  </data>
+  <data name="MouseDownSwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>按住鼠标按键时停用</value>
+  </data>
+  <data name="PressureTitle.Text" xml:space="preserve">
+    <value>压力</value>
+  </data>
+  <data name="PressureDescription.Text" xml:space="preserve">
+    <value>要用多大的力把指针推进角落。数值越大，需要推得越用力。</value>
+  </data>
+  <data name="ThresholdBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>压力</value>
+  </data>
+  <data name="ResetButton.Content" xml:space="preserve">
+    <value>重置首选项</value>
+  </data>
+</root>

@@ -18,7 +18,12 @@ namespace WinHotCorner
         static void Main(string[] args)
         {   
             // Nothing is shown to the user, so at least leave a trace of crashes
-            AppDomain.CurrentDomain.UnhandledException += (sender, e) => Log.Error($"Unhandled exception: {e.ExceptionObject}");
+            // and never leave the pointer confined
+            AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
+            {
+                PointerBarrier.Release();
+                Log.Error($"Unhandled exception: {e.ExceptionObject}");
+            };
             Application.ThreadException += (sender, e) => Log.Error($"Unhandled exception: {e.Exception}");
 
             // Check singleton

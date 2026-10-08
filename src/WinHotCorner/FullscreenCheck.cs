@@ -48,25 +48,22 @@ namespace WinHotCorner
 
         private const uint MONITOR_DEFAULTTONEAREST = 2;
 
-        private static List<IntPtr> exemptedHWnds = new List<IntPtr>();
         private static List<string> exemptedClassNames = new List<string>();
 
         private const string SWCHR_CNAME = "XamlExplorerHostIslandWindow";
         private const string WPPR_CNAME = "WorkerW";
+        private const string SHELL_CNAME = "Progman";
 
         static FullscreenCheck()
         {
-            // Add desktop hWnd
-            exemptedHWnds.Add(GetDesktopWindow());
-
-            // Add shell hWnd
-            exemptedHWnds.Add(GetShellWindow());
-
             // Add switcher className (Alt+Tab Win+Tab etc.)
             exemptedClassNames.Add(SWCHR_CNAME);
 
             // Add wallpaper className
             exemptedClassNames.Add(WPPR_CNAME);
+
+            // Add the desktop's className
+            exemptedClassNames.Add(SHELL_CNAME);
         }
 
         /// <summary>
@@ -90,7 +87,9 @@ namespace WinHotCorner
         /// <returns></returns>
         private static bool IsExempted(IntPtr hWnd)
         {
-            return exemptedHWnds.Contains(hWnd) || exemptedClassNames.Contains(GetWindowClassName(hWnd));
+            // The shell window is asked for every time: it is a new window after Explorer restarts, and a remembered
+            // one would let the desktop count as a fullscreen app from then on
+            return hWnd == GetDesktopWindow() || hWnd == GetShellWindow() || exemptedClassNames.Contains(GetWindowClassName(hWnd));
         }
 
         /// <summary>

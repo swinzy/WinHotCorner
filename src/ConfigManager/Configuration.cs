@@ -36,6 +36,18 @@
 
         public HotCornerScreens Screens { get; set; } = HotCornerScreens.PrimaryAndFree;
 
+        /// <summary>
+        /// When Windows' display language is written right to left, use the top-right corner, as GNOME does
+        /// (where its Activities button moves to the right). Otherwise the top-left corner is used in every language
+        /// </summary>
+        public bool MirrorForRightToLeft { get; set; } = true;
+
+        /// <summary>
+        /// Holds the pointer at a covered corner (another monitor beside it or above it) with ClipCursor, as GNOME's
+        /// barrier does (Expand hot corner area in the control panel)
+        /// </summary>
+        public bool ExpandHotCornerArea { get; set; } = true;
+
         public bool DisableWhenFullscreen { get; set; } = true;
         public bool DisableWhenMouseDown { get; set; } = true;
 
@@ -45,7 +57,7 @@
         /// <returns></returns>
         public override string ToString()
         {
-            return $"Enabled: {Enabled}, PressureThreshold: {PressureThreshold}, Screens: {Screens}, DisableWhenFullscreen: {DisableWhenFullscreen}, DisableWhenMouseDown: {DisableWhenMouseDown}";
+            return $"Enabled: {Enabled}, PressureThreshold: {PressureThreshold}, Screens: {Screens}, MirrorForRightToLeft: {MirrorForRightToLeft}, ExpandHotCornerArea: {ExpandHotCornerArea}, DisableWhenFullscreen: {DisableWhenFullscreen}, DisableWhenMouseDown: {DisableWhenMouseDown}";
         }
     }
 }
