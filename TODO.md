@@ -2,10 +2,6 @@
 
 Planned work and open questions. See [docs/technical.md](docs/technical.md) for how things work now.
 
-## Releases
-
-- [ ] **Sign the installers and programs.** Unsigned programs get SmartScreen warnings, and Smart App Control in Windows 11 can block them outright.
-
 ## Translations
 
 - [ ] **More languages.** English, Chinese (Simplified and Traditional) and Spanish (Latin American and Spain's) are done; see [docs/technical.md](docs/technical.md#translations) for what a new language needs.
