@@ -60,11 +60,12 @@ GNOME stops the pointer at a covered primary corner with a pointer barrier. Wind
 
 - An app is fullscreen on that corner's monitor (if *Disable when fullscreen* is on). Task View itself is exempt, so pushing again closes it.
 - A mouse button is held (if *Disable when mouse button is down* is on).
-- Shift, Ctrl, Alt or Win is held, so it does not mix into a shortcut the user is pressing.
 
 ## Opening Task View
 
-Windows has no public function to open Task View, so the hot corner sends Win+Tab with `SendInput` (`TaskView.cs`), as one uninterrupted sequence. If Windows accepts only part of it, the keys that went down are released, with an unassigned key (`0xE8`) tapped first so that a lone Win release does not open the Start menu.
+`TaskView.cs` asks the shell to open Task View: `Shell.Application`'s `WindowSwitcher` (`IShellDispatch5`), a documented function that opens Task View on Windows 10 and 11, or closes it when it is open, as pushing into the corner again should. It is as fast as Win+Tab (about 40 ms until Task View is in front, measured on Windows Server 2025), starts no process, and sends no keystroke, so a key the user holds does not matter and UIPI does not stand in the way. The object is created once and kept; if a call fails (Explorer restarted, for example), it is created again once.
+
+If the shell cannot do it, the hot corner sends Win+Tab with `SendInput` instead, as one uninterrupted sequence, unless Shift, Ctrl, Alt or Win is held (it would mix into a shortcut the user is pressing). If Windows accepts only part of it, the keys that went down are released, with an unassigned key (`0xE8`) tapped first so that a lone Win release does not open the Start menu.
 
 ## Ripple
 

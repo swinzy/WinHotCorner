@@ -6,10 +6,6 @@ Planned work and open questions. See [docs/technical.md](docs/technical.md) for 
 
 - [ ] **Sign the installers and programs.** Unsigned programs get SmartScreen warnings, and Smart App Control in Windows 11 can block them outright.
 
-## Hot corner
-
-- [ ] **Open Task View without simulating Win+Tab.** Windows has no public function for it. The shell namespace `shell:::{3080F90E-D7AD-11D9-BD98-0000947B0257}` ("Switch between windows") may open Task View; to check: whether it does on current Windows 11, how fast it is (it goes through `explorer.exe`), whether it also works with an elevated window in front.
-
 ## Translations
 
 - [ ] **More languages.** English, Chinese (Simplified and Traditional) and Spanish (Latin American and Spain's) are done; see [docs/technical.md](docs/technical.md#translations) for what a new language needs.

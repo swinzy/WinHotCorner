@@ -252,13 +252,6 @@ namespace WinHotCorner
                 return;
             }
 
-            // Don't mix our Win+Tab into a shortcut the user is pressing
-            if (TaskView.IsModifierDown())
-            {
-                Log.Info("Not triggered: Modifier key held");
-                return;
-            }
-
             if (!TaskView.Open())
                 return;
 

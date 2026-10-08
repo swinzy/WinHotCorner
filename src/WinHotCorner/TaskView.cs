@@ -1,16 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime.InteropServices;
 
 namespace WinHotCorner
 {
     /// <summary>
-    /// Opens Task View by sending Win+Tab.
+    /// Opens Task View, or closes it when it is open
     /// </summary>
     /// <remarks>
-    /// TODO: Simulating a keystroke is a workaround, not a proper solution. Ideally Windows would provide
-    /// a function that opens Task View directly. There is no public one at the moment, so we fall back to
-    /// the keyboard shortcut. Replace this if such an API ever becomes available.
+    /// Through the shell's own function, Shell.Application's WindowSwitcher (IShellDispatch5), which asks Explorer to
+    /// open Task View on Windows 10 and 11, as fast as Win+Tab does and without any keystroke. If that fails, it sends
+    /// Win+Tab instead.
     /// </remarks>
     internal static class TaskView
     {
@@ -77,9 +78,14 @@ namespace WinHotCorner
         private static readonly ushort[] MODIFIERS = { VK_SHIFT, VK_CONTROL, VK_MENU, VK_LWIN, VK_RWIN };
 
         /// <summary>
+        /// Shell.Application, kept for the next time (the first call takes a few tens of milliseconds)
+        /// </summary>
+        private static object _shell;
+
+        /// <summary>
         /// Checks if the user is holding Shift, Ctrl, Alt or Win
         /// </summary>
-        public static bool IsModifierDown()
+        private static bool IsModifierDown()
         {
             foreach (ushort vk in MODIFIERS)
             {
@@ -89,11 +95,53 @@ namespace WinHotCorner
             return false;
         }
 
+        /// <returns>false if Task View could not be opened</returns>
+        public static bool Open()
+        {
+            if (OpenWithShell())
+                return true;
+
+            // Don't mix our Win+Tab into a shortcut the user is pressing
+            if (IsModifierDown())
+            {
+                Log.Info("Not triggered: Modifier key held");
+                return false;
+            }
+            return SendWinTab();
+        }
+
+        /// <summary>
+        /// Calls Shell.Application's WindowSwitcher. Once more with a new object if it fails, as Explorer may have
+        /// restarted since the last time
+        /// </summary>
+        private static bool OpenWithShell()
+        {
+            for (int attempt = 1; attempt <= 2; attempt++)
+            {
+                try
+                {
+                    if (_shell == null)
+                        _shell = Activator.CreateInstance(Type.GetTypeFromProgID("Shell.Application", true));
+                    _shell.GetType().InvokeMember("WindowSwitcher", BindingFlags.InvokeMethod, null, _shell, null);
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    if (_shell != null && Marshal.IsComObject(_shell))
+                        Marshal.ReleaseComObject(_shell);
+                    _shell = null;
+                    if (attempt == 2)
+                        Log.Error($"Cannot open Task View through the shell, sending Win+Tab instead: {ex.GetBaseException().Message}");
+                }
+            }
+            return false;
+        }
+
         /// <summary>
         /// Sends Win+Tab as one uninterrupted sequence
         /// </summary>
         /// <returns>false if Windows did not accept all the key events</returns>
-        public static bool Open()
+        private static bool SendWinTab()
         {
             INPUT[] keys =
             {
