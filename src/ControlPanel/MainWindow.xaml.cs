@@ -71,6 +71,7 @@ public sealed partial class MainWindow : Window
         ShowState(MouseDownSwitch, MouseDownState);
         ShowState(RightToLeftSwitch, RightToLeftState);
         ShowState(HoldSwitch, HoldState);
+        ShowState(RippleSwitch, RippleState);
 
         // Right to left, the hot corner can be the top-right one: the choice shows only then
         _rightToLeft = InterfaceDirection.IsRightToLeft();
@@ -143,6 +144,8 @@ public sealed partial class MainWindow : Window
             ScreensBox.IsEnabled = !_managed.Contains(nameof(Configuration.Screens));
             HoldSwitch.IsOn = _config.ExpandHotCornerArea;
             HoldSwitch.IsEnabled = !_managed.Contains(nameof(Configuration.ExpandHotCornerArea));
+            RippleSwitch.IsOn = _config.ShowRipple;
+            RippleSwitch.IsEnabled = !_managed.Contains(nameof(Configuration.ShowRipple));
             RightToLeftSwitch.IsOn = _config.MirrorForRightToLeft;
             RightToLeftSwitch.IsEnabled = !_managed.Contains(nameof(Configuration.MirrorForRightToLeft));
             FullscreenSwitch.IsOn = _config.DisableWhenFullscreen;
@@ -151,7 +154,7 @@ public sealed partial class MainWindow : Window
             MouseDownSwitch.IsEnabled = !_managed.Contains(nameof(Configuration.DisableWhenMouseDown));
             ThresholdBox.Value = _config.PressureThreshold;
             ThresholdBox.IsEnabled = !_managed.Contains(nameof(Configuration.PressureThreshold));
-            ResetButton.IsEnabled = ScreensBox.IsEnabled || HoldSwitch.IsEnabled || RightToLeftSwitch.IsEnabled || FullscreenSwitch.IsEnabled || MouseDownSwitch.IsEnabled || ThresholdBox.IsEnabled;
+            ResetButton.IsEnabled = ScreensBox.IsEnabled || HoldSwitch.IsEnabled || RippleSwitch.IsEnabled || RightToLeftSwitch.IsEnabled || FullscreenSwitch.IsEnabled || MouseDownSwitch.IsEnabled || ThresholdBox.IsEnabled;
 
             NotInstalledInfo.IsOpen = !installed;
             PolicyInfo.IsOpen = _managed.Count > 0;
@@ -222,6 +225,12 @@ public sealed partial class MainWindow : Window
     {
         if (!_loading)
             ConfigManager.SetUserValue(nameof(Configuration.ExpandHotCornerArea), HoldSwitch.IsOn ? 1 : 0);
+    }
+
+    private void RippleSwitch_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (!_loading)
+            ConfigManager.SetUserValue(nameof(Configuration.ShowRipple), RippleSwitch.IsOn ? 1 : 0);
     }
 
     private void RightToLeftSwitch_Toggled(object sender, RoutedEventArgs e)
@@ -299,6 +308,7 @@ public sealed partial class MainWindow : Window
     {
         ConfigManager.ClearUserValue(nameof(Configuration.Screens));
         ConfigManager.ClearUserValue(nameof(Configuration.ExpandHotCornerArea));
+        ConfigManager.ClearUserValue(nameof(Configuration.ShowRipple));
         ConfigManager.ClearUserValue(nameof(Configuration.MirrorForRightToLeft));
         ConfigManager.ClearUserValue(nameof(Configuration.DisableWhenFullscreen));
         ConfigManager.ClearUserValue(nameof(Configuration.DisableWhenMouseDown));

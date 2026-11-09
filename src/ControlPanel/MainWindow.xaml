@@ -89,6 +89,24 @@
                     </StackPanel>
                 </Grid>
 
+                <Grid Style="{StaticResource CardStyle}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <FontIcon Glyph="&#xF4A5;" Style="{StaticResource CardIconStyle}" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock x:Uid="RippleTitle" />
+                        <TextBlock x:Uid="RippleDescription" Style="{StaticResource CardDescriptionStyle}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                        <TextBlock x:Name="RippleState" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+                        <ToggleSwitch x:Name="RippleSwitch" x:Uid="RippleSwitch" Style="{StaticResource CardToggleSwitchStyle}"
+                                      Toggled="RippleSwitch_Toggled" />
+                    </StackPanel>
+                </Grid>
+
                 <!-- Only when Windows' display language is written right to left -->
                 <Grid x:Name="RightToLeftCard" Style="{StaticResource CardStyle}" Visibility="Collapsed">
                     <Grid.ColumnDefinitions>

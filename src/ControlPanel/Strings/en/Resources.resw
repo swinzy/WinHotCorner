@@ -99,6 +99,15 @@
   <data name="RightToLeftSwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Mirror for right-to-left</value>
   </data>
+  <data name="RippleTitle.Text" xml:space="preserve">
+    <value>Ripple animation</value>
+  </data>
+  <data name="RippleDescription.Text" xml:space="preserve">
+    <value>Plays a ripple at the corner when it triggers</value>
+  </data>
+  <data name="RippleSwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Ripple animation</value>
+  </data>
   <data name="FullscreenTitle.Text" xml:space="preserve">
     <value>Disable when fullscreen</value>
   </data>

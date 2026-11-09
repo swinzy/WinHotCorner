@@ -71,7 +71,7 @@ If the shell cannot do it, the hot corner sends Win+Tab with `SendInput` instead
 
 ## Ripple
 
-When Task View opens, the corner plays GNOME's ripple (`Ripple.cs`, a port of GNOME Shell's `js/ui/ripples.js`): three quarter circles grow out of the corner and fade away within about 1.4 s, drawn in the `.ripple-box` style of GNOME's theme (white at 20 %, 52 logical pixels, with a soft edge). It is skipped when Windows animations are turned off (*Animation effects* in Settings).
+When Task View opens, the corner plays GNOME's ripple (`Ripple.cs`, a port of GNOME Shell's `js/ui/ripples.js`): three quarter circles grow out of the corner and fade away within about 1.4 s, drawn in the `.ripple-box` style of GNOME's theme (white at 20 %, 52 logical pixels, with a soft edge). It is skipped when *Ripple animation* is turned off in the control panel (`ShowRipple`), or when Windows animations are turned off (*Animation effects* in Settings).
 
 The ripple is a click-through layered window that never takes the focus or shows up in Task View. Task View covers ordinary topmost windows, though; only a window of a program with `uiAccess` stays above it. So the ripple shows above Task View only when the hot corner was installed signed for `uiAccess` (see [Startup and privileges](#startup-and-privileges)); otherwise it plays under Task View and is mostly hidden by it. The hot corner does not need to know which case it is in.
 
@@ -85,6 +85,7 @@ Settings are DWORD values in `HKEY_CURRENT_USER\Software\WinHotCorner`, written 
 | `PressureThreshold` | 10 to 1000 | 100 | Pressure needed to trigger, in logical pixels |
 | `MirrorForRightToLeft` | 0 or 1 | 1 | In a right-to-left display language, use the top-right corner (as GNOME) instead of the top-left one |
 | `ExpandHotCornerArea` | 0 or 1 | 1 | *Expand hot corner area*: hold the pointer at covered corners with `ClipCursor`, as GNOME's barrier does |
+| `ShowRipple` | 0 or 1 | 1 | *Ripple animation*: play the ripple when the corner triggers |
 | `Screens` | 0 to 3 | 0 | Which screens have a hot corner: 0 the primary screen and every screen whose corner is not covered (GNOME), 1 the primary screen only, 2 only screens whose corner is not covered, 3 all screens |
 | `DisableWhenFullscreen` | 0 or 1 | 1 | |
 | `DisableWhenMouseDown` | 0 or 1 | 1 | |

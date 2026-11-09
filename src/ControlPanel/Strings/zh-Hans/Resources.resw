@@ -99,6 +99,15 @@
   <data name="RightToLeftSwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>从右到左时镜像</value>
   </data>
+  <data name="RippleTitle.Text" xml:space="preserve">
+    <value>波纹动画</value>
+  </data>
+  <data name="RippleDescription.Text" xml:space="preserve">
+    <value>触发时在角落播放波纹</value>
+  </data>
+  <data name="RippleSwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>波纹动画</value>
+  </data>
   <data name="FullscreenTitle.Text" xml:space="preserve">
     <value>全屏时停用</value>
   </data>

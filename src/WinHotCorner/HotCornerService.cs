@@ -264,7 +264,7 @@ namespace WinHotCorner
                 return;
             }
 
-            if (!TaskView.Open())
+            if (!TaskView.Open() || !Configuration.ShowRipple)
                 return;
 
             foreach (CornerPressure corner in _corners)

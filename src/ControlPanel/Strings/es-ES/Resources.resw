@@ -99,6 +99,15 @@
   <data name="RightToLeftSwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Reflejar para idiomas de derecha a izquierda</value>
   </data>
+  <data name="RippleTitle.Text" xml:space="preserve">
+    <value>Animación de onda</value>
+  </data>
+  <data name="RippleDescription.Text" xml:space="preserve">
+    <value>Muestra una onda en la esquina al activarse</value>
+  </data>
+  <data name="RippleSwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Animación de onda</value>
+  </data>
   <data name="FullscreenTitle.Text" xml:space="preserve">
     <value>Desactivar en pantalla completa</value>
   </data>

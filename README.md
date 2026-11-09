@@ -68,6 +68,7 @@ Open **WinHotCorner Control Panel** from the Start menu to:
 - turn the hot corner off or on,
 - choose which screens have a hot corner (by default, as on GNOME: the primary screen and every screen with no other screen at its top left),
 - hold the pointer at a corner with another screen next to it (*Expand hot corner area*, on by default),
+- turn off the ripple animation,
 - keep it from triggering while an app is fullscreen on that screen, or while a mouse button is held,
 - change how hard you have to push into the corner.
 
