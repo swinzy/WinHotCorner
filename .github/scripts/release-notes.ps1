@@ -67,6 +67,7 @@ if ($attempt -gt 1) {
 $lines.Add('> [!TIP]')
 $lines.Add('> - `WinHotCorner-Full` installs both hot corner and control panel')
 $lines.Add('> - `WinHotCorner-HotCornerOnly` only installs hot corner')
+$lines.Add('> - `WinHotCorner-Portable` is hot corner without installing, settings in `WinHotCorner.ini`')
 $lines.Add('>')
 $lines.Add('> *You may install full version later after installing hot corner only version*')
 

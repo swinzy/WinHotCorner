@@ -38,12 +38,13 @@ Push the mouse pointer into the top-left corner of a screen and Task View opens,
 
 ## Install
 
-Download **one** installer from [Releases](https://github.com/swinzy/WinHotCorner/releases):
+Download **one** of these from [Releases](https://github.com/swinzy/WinHotCorner/releases):
 
-| Installer | Installs | |
+| Download | Installs | |
 |---|---|---|
 | **`WinHotCorner-Full-<version>-setup.exe`** | the hot corner **and** the control panel | Recommended |
 | **`WinHotCorner-HotCornerOnly-<version>-setup.exe`** | the hot corner only (about 2 MB) | If you don't want the control panel |
+| **`WinHotCorner-Portable-<version>.zip`** | nothing: the hot corner runs from its folder, see [Portable](#portable) | If you don't want to install anything |
 
 > [!TIP]
 > You can always add the **control panel** to a **hot corner only** install by running the **full** installer (yes we thought of that).
@@ -60,6 +61,18 @@ By default, Setup signs WinHotCorner on your computer, so it runs without admini
 > Read more about [why WinHotCorner itself is not signed](docs/digital-signature.md#why-winhotcorner-itself-is-not-signed).
 
 Windows 10 version 1903 or later, or Windows 11, 64-bit. In English, 简体中文, 繁體中文 and Español.
+
+## Portable
+
+Unzip `WinHotCorner-Portable-<version>.zip` into a folder of its own and run `WinHotCorner.exe`.
+
+The portable version is self-contained: it doesn't change the registry, and keeps its settings (`WinHotCorner.ini`) and its log (`WinHotCorner.log`) in the folder it runs from. It still follows Group Policy and Windows' accessibility settings, such as animation effects.
+
+Edit `WinHotCorner.ini` with Notepad; changes apply when you save. To stop it, set `Enabled=0`; to remove it, delete the folder.
+
+> [!IMPORTANT]
+> - It is not signed, as signing is done by the installer: it doesn't trigger while an app running as administrator is in front, and its ripple stays under Task View.
+> - It doesn't change anything outside its folder, so it doesn't start when you sign in. If you want it to, add it to your startup apps the way you prefer.
 
 ## Settings
 
@@ -78,7 +91,7 @@ To remove it: *Settings* → *Apps* → *Installed apps* → *WinHotCorner* (and
 
 ## Troubleshooting
 
-Errors are written to `%LOCALAPPDATA%\WinHotCorner\WinHotCorner.log`. Please attach it to an [issue](https://github.com/swinzy/WinHotCorner/issues).
+Errors are written to `%LOCALAPPDATA%\WinHotCorner\WinHotCorner.log` (portable: `WinHotCorner.log` next to `WinHotCorner.exe`). Please attach it to an [issue](https://github.com/swinzy/WinHotCorner/issues).
 
 ## How it works
 

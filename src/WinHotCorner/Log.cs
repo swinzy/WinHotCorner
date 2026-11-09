@@ -7,14 +7,16 @@ namespace WinHotCorner
     /// <summary>
     /// Minimal logging for a process that has no window.
     /// Every message goes to the debug output (viewable with DebugView, also in Release) and,
-    /// in Debug builds, to the console. Errors are also appended to a small log file.
+    /// in Debug builds, to the console. Errors are also appended to a small log file, next to the program in
+    /// portable mode. Where it cannot be written (a read-only folder, for example), there is no log file.
     /// </summary>
     internal static class Log
     {
         /// <summary>
-        /// The log folder, typically is "C:\Users\[USER]\Appdata\Local\WinHotCorner"
+        /// The log folder, typically is "C:\Users\[USER]\Appdata\Local\WinHotCorner"; in portable mode, the program's folder
         /// </summary>
-        public static readonly string LOG_DIR = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "WinHotCorner");
+        public static readonly string LOG_DIR = Portable.IsOn ? Portable.FOLDER
+            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "WinHotCorner");
 
         /// <summary>
         /// The error log, typically is "C:\Users\[USER]\Appdata\Local\WinHotCorner\WinHotCorner.log"

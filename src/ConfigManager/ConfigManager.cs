@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
 using Microsoft.Win32;
 
 namespace WinHotCorner
 {
     /// <summary>
-    /// Saves and loads the configuration in the registry
+    /// Saves and loads the configuration in the registry, or in the settings file in portable mode
     /// </summary>
     /// <remarks>
     /// Every setting is a DWORD with the name of its <see cref="Configuration"/> property. A missing key or value
@@ -13,6 +15,9 @@ namespace WinHotCorner
     ///
     /// The hot corner usually runs elevated, while anything running as the user can write HKCU. So values are
     /// read strictly: anything that is not a DWORD in range is ignored (the default is used) and reported.
+    ///
+    /// In portable mode the user's values come from a settings file instead (name=value lines, see
+    /// <see cref="LoadFromFile"/>), read just as strictly. Group Policy still overrides them.
     /// </remarks>
     public static class ConfigManager
     {
@@ -27,6 +32,12 @@ namespace WinHotCorner
         public const string POLICY_KEY_PATH = @"Software\Policies\WinHotCorner";
 
         private const int MAX_SCREENS = (int)HotCornerScreens.All;
+
+        /// <summary>
+        /// Reads one of the user's values, from wherever they are kept
+        /// </summary>
+        /// <returns>true if there is a valid value of that name</returns>
+        private delegate bool UserValueReader(string name, int min, int max, ICollection<string> problems, out int value);
 
         /// <summary>
         /// Saves the given configuration to the user's key
@@ -104,10 +115,50 @@ namespace WinHotCorner
         /// <returns>The configuration, never null</returns>
         public static Configuration Load(ICollection<string> problems)
         {
+            RegistryKey user;
+            try
+            {
+                user = Registry.CurrentUser.OpenSubKey(KEY_PATH);
+            }
+            catch (Exception ex)
+            {
+                // Cannot even open the key: run with the defaults
+                problems.Add($"Cannot read configuration: {ex.Message}");
+                return new Configuration();
+            }
+
+            using (user)
+            {
+                return Load((string name, int min, int max, ICollection<string> found, out int value) =>
+                    TryRead(user, "user", name, min, max, found, out value), problems);
+            }
+        }
+
+        /// <summary>
+        /// Loads the configuration of portable mode: policy value if set, otherwise the value in the settings file,
+        /// otherwise the default. A missing file means the defaults.
+        /// </summary>
+        /// <remarks>
+        /// Each line is name=value, with the name of a <see cref="Configuration"/> property and a whole number, as in
+        /// the registry. Empty lines, comments (starting with ; or #) and section headers ([...]) are skipped.
+        /// </remarks>
+        /// <param name="problems">receives a description of every line or value that was ignored</param>
+        /// <returns>The configuration, never null</returns>
+        /// <exception cref="IOException">The file exists but cannot be read, for example while it is being saved</exception>
+        /// <exception cref="UnauthorizedAccessException">The file exists but cannot be read</exception>
+        public static Configuration LoadFromFile(string path, ICollection<string> problems)
+        {
+            string file = Path.GetFileName(path);
+            Dictionary<string, string> values = ReadSettingsFile(path, file, problems);
+            return Load((string name, int min, int max, ICollection<string> found, out int value) =>
+                TryRead(values, file, name, min, max, found, out value), problems);
+        }
+
+        private static Configuration Load(UserValueReader user, ICollection<string> problems)
+        {
             var cfg = new Configuration();
             try
             {
-                using (RegistryKey user = Registry.CurrentUser.OpenSubKey(KEY_PATH))
                 using (RegistryKey policy = Registry.LocalMachine.OpenSubKey(POLICY_KEY_PATH))
                 {
                     cfg.Enabled = ReadBool(policy, user, nameof(Configuration.Enabled), cfg.Enabled, problems);
@@ -123,25 +174,88 @@ namespace WinHotCorner
             }
             catch (Exception ex)
             {
-                // Cannot even open the keys: run with the defaults
+                // Cannot even open the policy key: run with the defaults
                 problems.Add($"Cannot read configuration: {ex.Message}");
                 return new Configuration();
             }
             return cfg;
         }
 
-        private static bool ReadBool(RegistryKey policy, RegistryKey user, string name, bool fallback, ICollection<string> problems)
+        private static bool ReadBool(RegistryKey policy, UserValueReader user, string name, bool fallback, ICollection<string> problems)
         {
             return ReadInt(policy, user, name, fallback ? 1 : 0, 0, 1, problems) != 0;
         }
 
-        private static int ReadInt(RegistryKey policy, RegistryKey user, string name, int fallback, int min, int max, ICollection<string> problems)
+        private static int ReadInt(RegistryKey policy, UserValueReader user, string name, int fallback, int min, int max, ICollection<string> problems)
         {
             if (TryRead(policy, "policy", name, min, max, problems, out int value))
                 return value;
-            if (TryRead(user, "user", name, min, max, problems, out value))
+            if (user(name, min, max, problems, out value))
                 return value;
             return fallback;
+        }
+
+        /// <summary>
+        /// Reads the name=value lines of the settings file
+        /// </summary>
+        /// <returns>the values by name (any case), empty if there is no file</returns>
+        private static Dictionary<string, string> ReadSettingsFile(string path, string file, ICollection<string> problems)
+        {
+            var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            string[] lines;
+            try
+            {
+                lines = File.ReadAllLines(path);
+            }
+            catch (FileNotFoundException)
+            {
+                return values;
+            }
+            catch (DirectoryNotFoundException)
+            {
+                return values;
+            }
+
+            var settings = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var property in typeof(Configuration).GetProperties())
+                settings.Add(property.Name);
+
+            for (int i = 0; i < lines.Length; i++)
+            {
+                string line = lines[i].Trim();
+                if (line.Length == 0 || line[0] == ';' || line[0] == '#' || line[0] == '[')
+                    continue;
+
+                int equals = line.IndexOf('=');
+                string name = equals > 0 ? line.Substring(0, equals).Trim() : "";
+                if (!settings.Contains(name))
+                {
+                    problems.Add($"Ignored line {i + 1} of {file}: not a setting");
+                    continue;
+                }
+                values[name] = line.Substring(equals + 1).Trim();
+            }
+            return values;
+        }
+
+        /// <returns>true if the settings file has a valid value of that name</returns>
+        private static bool TryRead(Dictionary<string, string> values, string file, string name, int min, int max, ICollection<string> problems, out int value)
+        {
+            value = 0;
+            if (!values.TryGetValue(name, out string text))
+                return false;
+
+            if (!int.TryParse(text, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out value))
+            {
+                problems.Add($"Ignored {name} in {file}: \"{text}\" is not a whole number");
+                return false;
+            }
+            if (value < min || value > max)
+            {
+                problems.Add($"Ignored {name} in {file}: {value} is not between {min} and {max}");
+                return false;
+            }
+            return true;
         }
 
         /// <returns>true if the key has a valid value of that name</returns>
