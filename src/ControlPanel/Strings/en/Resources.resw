@@ -42,6 +42,15 @@
   <data name="Off" xml:space="preserve">
     <value>Off</value>
   </data>
+  <data name="PortableInfo.Title" xml:space="preserve">
+    <value>Portable version</value>
+  </data>
+  <data name="PortableSaved" xml:space="preserve">
+    <value>Settings are saved in {0}</value>
+  </data>
+  <data name="PortableNotSaved" xml:space="preserve">
+    <value>Cannot save settings to {0}</value>
+  </data>
   <data name="StatusNotInstalled" xml:space="preserve">
     <value>Not installed</value>
   </data>

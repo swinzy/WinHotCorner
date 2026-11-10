@@ -171,7 +171,7 @@ namespace WinHotCorner
                 {
                     if (attempt == 5)
                     {
-                        problems.Add($"Cannot read {Portable.SETTINGS_FILE_NAME}, keeping the current settings: {ex.Message}");
+                        problems.Add($"Cannot read {ConfigManager.SETTINGS_FILE_NAME}, keeping the current settings: {ex.Message}");
                         return null;
                     }
                     Thread.Sleep(100);

@@ -42,6 +42,15 @@
   <data name="Off" xml:space="preserve">
     <value>Desactivado</value>
   </data>
+  <data name="PortableInfo.Title" xml:space="preserve">
+    <value>Versión portátil</value>
+  </data>
+  <data name="PortableSaved" xml:space="preserve">
+    <value>La configuración se guarda en {0}</value>
+  </data>
+  <data name="PortableNotSaved" xml:space="preserve">
+    <value>No se puede guardar la configuración en {0}</value>
+  </data>
   <data name="StatusNotInstalled" xml:space="preserve">
     <value>No instalada</value>
   </data>

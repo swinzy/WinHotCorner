@@ -19,9 +19,7 @@ namespace WinHotCorner
         /// </summary>
         public static readonly string FOLDER = AppDomain.CurrentDomain.BaseDirectory;
 
-        public const string SETTINGS_FILE_NAME = "WinHotCorner.ini";
-
-        public static readonly string SETTINGS_FILE = Path.Combine(FOLDER, SETTINGS_FILE_NAME);
+        public static readonly string SETTINGS_FILE = Path.Combine(FOLDER, ConfigManager.SETTINGS_FILE_NAME);
 
         public static readonly bool IsOn = File.Exists(SETTINGS_FILE);
     }

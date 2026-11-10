@@ -138,7 +138,7 @@ Only one hot corner runs per session (a named mutex).
 - `EXIT_EVENT_NAME`: setting this event asks the hot corner to exit (`RequestExit()`). The hot corner creates it with access for the current user, otherwise its unelevated programs could not open it.
 - `TASK_NAME`: the scheduled task. Turning the hot corner on in the control panel writes `Enabled = 1` and runs the task, so it starts elevated. Without a task (signed for `uiAccess`, or the task is gone) it starts the exe through `ShellExecute`, which grants `uiAccess` to the signed version; the usual version then runs without elevation until the next sign-in. Turning it off just writes `Enabled = 0`. *Run now* next to *Not running* starts it the same way.
 
-The control panel writes only the value that changed, so it never copies a Group Policy value into the user's settings.
+The control panel writes only the value that changed, so it never copies a Group Policy value into the user's settings. When the hot corner running is a [portable](#portable) one, it reads and writes that one's `WinHotCorner.ini` instead.
 
 In a right-to-left display language the control panel is laid out right to left, as Windows' own apps are: WinUI does not do that by itself, so it sets `WS_EX_LAYOUTRTL` on the window (the title bar) and `FlowDirection` on the content; the logo keeps its direction.
 
@@ -158,6 +158,7 @@ Both are Inno Setup 7 scripts in `installer`, published as two downloads:
 - **Nothing in the registry**: the hot corner does not read the user's settings in HKCU, and does not create its key there to watch it.
 - **Log**: `WinHotCorner.log` next to the program (see [Log](#log)).
 - **Not signed**: `uiAccess` needs an install in a protected folder, so the portable hot corner runs with the rights of whoever starts it. For an administrator that is usually not elevated, so it does not trigger with an elevated window in front, and its ripple plays under Task View.
+- **Control panel**: an installed control panel also works with a running portable hot corner. It finds the program of the hot corner running in its session (`HotCornerControl.GetRunningPath`, `QueryFullProcessImageName`, which also works for an elevated one); when `WinHotCorner.ini` is next to it, the control panel shows the settings of that file and writes each change to its line, leaving the rest of the file, comments included, as it is (`ConfigManager.SetFileValue`). *Reset* writes the defaults out rather than removing the lines. An info bar says where the file is, or that it could not be saved (a read-only folder, for example). A portable hot corner that is not running cannot be found, so a control panel opened then shows the settings in the registry; starting the portable one brings its settings back. The exception: while no hot corner runs, an open control panel stays with the last one it found, so turning a portable hot corner off and on again in it works (turning it on just runs its program).
 - **Startup**: nothing starts it at sign-in; a shortcut in the Startup folder (`shell:startup`) does. `Enabled=0` makes it exit, as in the registry.
 - Only one hot corner runs per session either way, so an installed one and a portable one never both trigger: whichever starts second exits.
 

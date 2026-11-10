@@ -28,6 +28,7 @@
 
                 <InfoBar x:Name="NotInstalledInfo" x:Uid="NotInstalledInfo" Severity="Warning" IsClosable="False" />
                 <InfoBar x:Name="PolicyInfo" x:Uid="PolicyInfo" Severity="Informational" IsClosable="False" />
+                <InfoBar x:Name="PortableInfo" x:Uid="PortableInfo" Severity="Informational" IsClosable="False" />
 
                 <Grid Style="{StaticResource CardStyle}">
                     <Grid.ColumnDefinitions>

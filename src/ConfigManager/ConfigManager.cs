@@ -31,6 +31,11 @@ namespace WinHotCorner
         /// </summary>
         public const string POLICY_KEY_PATH = @"Software\Policies\WinHotCorner";
 
+        /// <summary>
+        /// The settings file of portable mode, next to the hot corner
+        /// </summary>
+        public const string SETTINGS_FILE_NAME = "WinHotCorner.ini";
+
         private const int MAX_SCREENS = (int)HotCornerScreens.All;
 
         /// <summary>
@@ -153,6 +158,70 @@ namespace WinHotCorner
             return Load((string name, int min, int max, ICollection<string> found, out int value) =>
                 TryRead(values, file, name, min, max, found, out value), problems);
         }
+
+        /// <summary>
+        /// Sets one of the values in the settings file of portable mode (the name of a <see cref="Configuration"/>
+        /// property), keeping the rest of the file, comments included, as it is
+        /// </summary>
+        /// <exception cref="IOException">The file cannot be read or written</exception>
+        /// <exception cref="UnauthorizedAccessException">The file cannot be written</exception>
+        public static void SetFileValue(string path, string name, int value)
+        {
+            SetFileValues(path, new Dictionary<string, int> { { name, value } });
+        }
+
+        /// <summary>
+        /// Sets values in the settings file of portable mode back to their defaults. They are written out rather than
+        /// removed, so the file keeps listing every setting
+        /// </summary>
+        /// <exception cref="IOException">The file cannot be read or written</exception>
+        /// <exception cref="UnauthorizedAccessException">The file cannot be written</exception>
+        public static void ClearFileValues(string path, IEnumerable<string> names)
+        {
+            var defaults = new Configuration();
+            var values = new Dictionary<string, int>();
+            foreach (string name in names)
+            {
+                object value = typeof(Configuration).GetProperty(name).GetValue(defaults, null);
+                values[name] = value is bool on ? (on ? 1 : 0) : Convert.ToInt32(value, CultureInfo.InvariantCulture);
+            }
+            SetFileValues(path, values);
+        }
+
+        /// <summary>
+        /// Replaces the lines of these settings, or adds them at the end
+        /// </summary>
+        private static void SetFileValues(string path, Dictionary<string, int> values)
+        {
+            var lines = new List<string>(File.Exists(path) ? File.ReadAllLines(path) : new string[0]);
+            var written = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < lines.Count; i++)
+            {
+                string line = lines[i].Trim();
+                if (line.Length == 0 || line[0] == ';' || line[0] == '#' || line[0] == '[')
+                    continue;
+
+                int equals = line.IndexOf('=');
+                string name = equals > 0 ? line.Substring(0, equals).Trim() : "";
+                foreach (KeyValuePair<string, int> setting in values)
+                {
+                    if (string.Equals(setting.Key, name, StringComparison.OrdinalIgnoreCase))
+                    {
+                        lines[i] = FileLine(setting);
+                        written.Add(setting.Key);
+                    }
+                }
+            }
+            foreach (KeyValuePair<string, int> setting in values)
+            {
+                if (!written.Contains(setting.Key))
+                    lines.Add(FileLine(setting));
+            }
+            File.WriteAllText(path, string.Join("\r\n", lines) + "\r\n");
+        }
+
+        private static string FileLine(KeyValuePair<string, int> setting) =>
+            setting.Key + "=" + setting.Value.ToString(CultureInfo.InvariantCulture);
 
         private static Configuration Load(UserValueReader user, ICollection<string> problems)
         {

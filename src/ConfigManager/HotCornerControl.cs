@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 
 namespace WinHotCorner
@@ -8,6 +11,20 @@ namespace WinHotCorner
     /// </summary>
     public static class HotCornerControl
     {
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr OpenProcess(uint access, bool inheritHandle, int processId);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern bool QueryFullProcessImageName(IntPtr process, int flags, StringBuilder name, ref int size);
+
+        [DllImport("kernel32.dll")]
+        private static extern bool CloseHandle(IntPtr handle);
+
+        /// <summary>
+        /// Enough to read the program file, also of an elevated process
+        /// </summary>
+        private const uint PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
+
         /// <summary>
         /// Held by the running hot corner, so only one runs per session.
         /// The assembly GUID, unchanged since the first release, so older versions are recognised too
@@ -43,6 +60,40 @@ namespace WinHotCorner
                 // Exists, just not ours to open (the hot corner runs elevated)
                 return true;
             }
+        }
+
+        /// <summary>
+        /// Finds the program file of the hot corner running in this session, which tells an installed one from a
+        /// portable one (with the settings file next to it)
+        /// </summary>
+        /// <returns>null if none is running, or its path cannot be read</returns>
+        public static string GetRunningPath()
+        {
+            int session = Process.GetCurrentProcess().SessionId;
+            foreach (Process process in Process.GetProcessesByName("WinHotCorner"))
+            {
+                using (process)
+                {
+                    if (process.SessionId != session)
+                        continue;
+
+                    IntPtr handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, process.Id);
+                    if (handle == IntPtr.Zero)
+                        continue;
+                    try
+                    {
+                        var name = new StringBuilder(32768);
+                        int size = name.Capacity;
+                        if (QueryFullProcessImageName(handle, 0, name, ref size))
+                            return name.ToString();
+                    }
+                    finally
+                    {
+                        CloseHandle(handle);
+                    }
+                }
+            }
+            return null;
         }
 
         /// <summary>
