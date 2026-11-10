@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.AccessControl;
 using System.Security.Principal;
@@ -46,7 +47,7 @@ namespace WinHotCorner
         /// </summary>
         private const int WM_TRIGGER = 0x8000 + 1;
         /// <summary>
-        /// Posted when the configuration in the registry changed
+        /// Posted when the configuration in the registry (or in portable mode, the settings file) changed
         /// </summary>
         private const int WM_CONFIG_CHANGED = 0x8000 + 2;
         /// <summary>
@@ -71,7 +72,10 @@ namespace WinHotCorner
         private long _lastEventCount = 0;
         private POINT _lastCursorPos;
 
-        private RegistryWatcher _userWatcher;
+        /// <summary>
+        /// Watches the user's settings: a <see cref="RegistryWatcher"/>, or in portable mode a <see cref="SettingsFileWatcher"/>
+        /// </summary>
+        private IDisposable _userWatcher;
         private RegistryWatcher _policyWatcher;
         private EventWaitHandle _exitEvent;
         private RegisteredWaitHandle _exitWait;
@@ -105,7 +109,7 @@ namespace WinHotCorner
             _hook.Install();
             GetCursorPos(out _lastCursorPos);
             _watchdog.Start();
-            Log.Info($"Started (elevated: {HasToken(TokenElevation)}, uiAccess: {HasToken(TokenUIAccess)})");
+            Log.Info($"Started (elevated: {HasToken(TokenElevation)}, uiAccess: {HasToken(TokenUIAccess)}, portable: {(Portable.IsOn ? "yes" : "no")})");
             return true;
         }
 
@@ -138,24 +142,68 @@ namespace WinHotCorner
         private void LoadConfiguration()
         {
             var problems = new List<string>();
-            Configuration = ConfigManager.Load(problems);
+            Configuration loaded = Portable.IsOn ? LoadSettingsFile(problems) : ConfigManager.Load(problems);
             foreach (string problem in problems)
                 Log.Error(problem);
+            if (loaded is null)
+                return;
+            Configuration = loaded;
             Log.Info($"Configuration: {Configuration}");
+        }
+
+        /// <summary>
+        /// Reads the settings file of portable mode, trying again for a moment while it cannot be read (an editor may
+        /// still be saving it)
+        /// </summary>
+        /// <returns>null if it still cannot be read: the current configuration stays</returns>
+        private static Configuration LoadSettingsFile(List<string> problems)
+        {
+            for (int attempt = 1; ; attempt++)
+            {
+                try
+                {
+                    var found = new List<string>();
+                    Configuration loaded = ConfigManager.LoadFromFile(Portable.SETTINGS_FILE, found);
+                    problems.AddRange(found);
+                    return loaded;
+                }
+                catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+                {
+                    if (attempt == 5)
+                    {
+                        problems.Add($"Cannot read {ConfigManager.SETTINGS_FILE_NAME}, keeping the current settings: {ex.Message}");
+                        return null;
+                    }
+                    Thread.Sleep(100);
+                }
+            }
         }
 
         private void WatchConfiguration()
         {
-            // The user's key is created if it is missing, so that it can be watched.
-            // The policy key may not exist, so watch its parent, which always does
-            _userWatcher = new RegistryWatcher(() => Registry.CurrentUser.CreateSubKey(ConfigManager.KEY_PATH), false);
-            _policyWatcher = new RegistryWatcher(() => Registry.LocalMachine.OpenSubKey(@"Software\Policies"), true);
+            void post() => PostMessage(_window.Handle, WM_CONFIG_CHANGED, IntPtr.Zero, IntPtr.Zero);
 
-            foreach (RegistryWatcher watcher in new[] { _userWatcher, _policyWatcher })
+            if (Portable.IsOn)
             {
-                watcher.Changed += () => PostMessage(_window.Handle, WM_CONFIG_CHANGED, IntPtr.Zero, IntPtr.Zero);
-                watcher.Arm();
+                // Nothing in HKCU: no key is created, and the user's values there are not read
+                var file = new SettingsFileWatcher(Portable.SETTINGS_FILE);
+                file.Changed += post;
+                file.Arm();
+                _userWatcher = file;
             }
+            else
+            {
+                // The user's key is created if it is missing, so that it can be watched
+                var key = new RegistryWatcher(() => Registry.CurrentUser.CreateSubKey(ConfigManager.KEY_PATH), false);
+                key.Changed += post;
+                key.Arm();
+                _userWatcher = key;
+            }
+
+            // The policy key may not exist, so watch its parent, which always does
+            _policyWatcher = new RegistryWatcher(() => Registry.LocalMachine.OpenSubKey(@"Software\Policies"), true);
+            _policyWatcher.Changed += post;
+            _policyWatcher.Arm();
         }
 
         private void OnConfigurationChanged()
@@ -264,7 +312,7 @@ namespace WinHotCorner
                 return;
             }
 
-            if (!TaskView.Open())
+            if (!TaskView.Open() || !Configuration.ShowRipple)
                 return;
 
             foreach (CornerPressure corner in _corners)

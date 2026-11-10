@@ -39,6 +39,23 @@ public sealed partial class MainWindow : Window
     private static readonly string HotCornerExe = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "WinHotCorner.exe"));
 
     /// <summary>
+    /// The settings file of the portable hot corner whose settings are shown, or null for the installed one, whose
+    /// settings are in the registry (see <see cref="FindHotCorner"/>)
+    /// </summary>
+    private string? _portableSettings;
+
+    /// <summary>
+    /// The last change could not be written to <see cref="_portableSettings"/>
+    /// </summary>
+    private bool _saveFailed;
+
+    /// <summary>
+    /// The hot corner whose settings are shown
+    /// </summary>
+    private string ShownHotCornerExe =>
+        _portableSettings is null ? HotCornerExe : Path.Combine(Path.GetDirectoryName(_portableSettings)!, "WinHotCorner.exe");
+
+    /// <summary>
     /// The choices in <see cref="ScreensBox"/>, in their order there
     /// </summary>
     private static readonly HotCornerScreens[] ScreenChoices =
@@ -71,6 +88,7 @@ public sealed partial class MainWindow : Window
         ShowState(MouseDownSwitch, MouseDownState);
         ShowState(RightToLeftSwitch, RightToLeftState);
         ShowState(HoldSwitch, HoldState);
+        ShowState(RippleSwitch, RippleState);
 
         // Right to left, the hot corner can be the top-right one: the choice shows only then
         _rightToLeft = InterfaceDirection.IsRightToLeft();
@@ -132,9 +150,10 @@ public sealed partial class MainWindow : Window
         try
         {
             // Values the hot corner ignores are reported in its own log, the defaults show here
-            _config = ConfigManager.Load(new List<string>());
+            FindHotCorner();
+            _config = _portableSettings is null ? ConfigManager.Load(new List<string>()) : LoadPortableSettings(_portableSettings);
             _managed = ConfigManager.GetPolicySettings();
-            bool installed = File.Exists(HotCornerExe);
+            bool installed = File.Exists(ShownHotCornerExe);
 
             EnabledSwitch.IsOn = _config.Enabled;
             EnabledSwitch.IsEnabled = installed && !_managed.Contains(nameof(Configuration.Enabled));
@@ -143,6 +162,8 @@ public sealed partial class MainWindow : Window
             ScreensBox.IsEnabled = !_managed.Contains(nameof(Configuration.Screens));
             HoldSwitch.IsOn = _config.ExpandHotCornerArea;
             HoldSwitch.IsEnabled = !_managed.Contains(nameof(Configuration.ExpandHotCornerArea));
+            RippleSwitch.IsOn = _config.ShowRipple;
+            RippleSwitch.IsEnabled = !_managed.Contains(nameof(Configuration.ShowRipple));
             RightToLeftSwitch.IsOn = _config.MirrorForRightToLeft;
             RightToLeftSwitch.IsEnabled = !_managed.Contains(nameof(Configuration.MirrorForRightToLeft));
             FullscreenSwitch.IsOn = _config.DisableWhenFullscreen;
@@ -151,10 +172,11 @@ public sealed partial class MainWindow : Window
             MouseDownSwitch.IsEnabled = !_managed.Contains(nameof(Configuration.DisableWhenMouseDown));
             ThresholdBox.Value = _config.PressureThreshold;
             ThresholdBox.IsEnabled = !_managed.Contains(nameof(Configuration.PressureThreshold));
-            ResetButton.IsEnabled = ScreensBox.IsEnabled || HoldSwitch.IsEnabled || RightToLeftSwitch.IsEnabled || FullscreenSwitch.IsEnabled || MouseDownSwitch.IsEnabled || ThresholdBox.IsEnabled;
+            ResetButton.IsEnabled = ScreensBox.IsEnabled || HoldSwitch.IsEnabled || RippleSwitch.IsEnabled || RightToLeftSwitch.IsEnabled || FullscreenSwitch.IsEnabled || MouseDownSwitch.IsEnabled || ThresholdBox.IsEnabled;
 
             NotInstalledInfo.IsOpen = !installed;
             PolicyInfo.IsOpen = _managed.Count > 0;
+            ShowPortableInfo();
         }
         finally
         {
@@ -164,12 +186,101 @@ public sealed partial class MainWindow : Window
     }
 
     /// <summary>
+    /// Follows the hot corner that is running: a portable one when the settings file is next to it. While none is
+    /// running, the window stays with the last one it found, so a portable hot corner that was turned off here can be
+    /// turned on again
+    /// </summary>
+    private void FindHotCorner()
+    {
+        string? running = HotCornerControl.GetRunningPath();
+        if (running is null)
+            return;
+
+        string settings = Path.Combine(Path.GetDirectoryName(running)!, ConfigManager.SETTINGS_FILE_NAME);
+        string? portable = File.Exists(settings) ? settings : null;
+        if (portable != _portableSettings)
+        {
+            _portableSettings = portable;
+            _saveFailed = false;
+        }
+    }
+
+    /// <returns>the settings in the file, or the ones shown while it cannot be read (it may be being saved)</returns>
+    private Configuration LoadPortableSettings(string path)
+    {
+        try
+        {
+            // Values the hot corner ignores are reported in its own log, the defaults show here
+            return ConfigManager.LoadFromFile(path, new List<string>());
+        }
+        catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+        {
+            return _config;
+        }
+    }
+
+    /// <summary>
+    /// Says where the settings of a portable hot corner are, or that they could not be saved there
+    /// </summary>
+    private void ShowPortableInfo()
+    {
+        PortableInfo.IsOpen = _portableSettings is not null;
+        if (_portableSettings is null)
+            return;
+        PortableInfo.Severity = _saveFailed ? InfoBarSeverity.Error : InfoBarSeverity.Informational;
+        PortableInfo.Message = string.Format(Strings.GetString(_saveFailed ? "PortableNotSaved" : "PortableSaved"), _portableSettings);
+    }
+
+    /// <summary>
+    /// Writes one setting where the hot corner shown reads it: the registry, or the settings file of a portable one
+    /// </summary>
+    private void SetValue(string name, int value)
+    {
+        if (_portableSettings is null)
+        {
+            ConfigManager.SetUserValue(name, value);
+            return;
+        }
+        SavePortable(() => ConfigManager.SetFileValue(_portableSettings, name, value));
+    }
+
+    /// <summary>
+    /// Sets settings back to their defaults, where the hot corner shown reads them
+    /// </summary>
+    private void ClearValues(params string[] names)
+    {
+        if (_portableSettings is null)
+        {
+            foreach (string name in names)
+                ConfigManager.ClearUserValue(name);
+            return;
+        }
+        SavePortable(() => ConfigManager.ClearFileValues(_portableSettings, names));
+    }
+
+    private void SavePortable(Action save)
+    {
+        try
+        {
+            save();
+            _saveFailed = false;
+            ShowPortableInfo();
+        }
+        catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+        {
+            // A read-only folder, for example: show what is still in effect
+            _saveFailed = true;
+            LoadSettings();
+        }
+    }
+
+    /// <summary>
     /// Shows a line under "Hot corner" only when something is unusual; On/Off is already next to the switch
     /// </summary>
     private void UpdateStatus()
     {
         bool notRunning = false;
-        if (!File.Exists(HotCornerExe))
+        if (!File.Exists(ShownHotCornerExe))
             StatusText.Text = Strings.GetString("StatusNotInstalled");
         else if (!_config.Enabled)
             StatusText.Text = _managed.Contains(nameof(Configuration.Enabled)) ? Strings.GetString("StatusTurnedOff") : "";
@@ -189,11 +300,15 @@ public sealed partial class MainWindow : Window
             return;
 
         _config.Enabled = EnabledSwitch.IsOn;
-        ConfigManager.SetUserValue(nameof(Configuration.Enabled), _config.Enabled ? 1 : 0);
+        SetValue(nameof(Configuration.Enabled), _config.Enabled ? 1 : 0);
 
         // Turning off needs nothing more: the hot corner sees the change and exits by itself
         if (_config.Enabled && !HotCornerControl.IsRunning())
-            _ = Task.Run(StartHotCorner);
+        {
+            string exe = ShownHotCornerExe;
+            bool portable = _portableSettings is not null;
+            _ = Task.Run(() => StartHotCorner(exe, portable));
+        }
         UpdateStatus();
     }
 
@@ -207,13 +322,15 @@ public sealed partial class MainWindow : Window
         if (screens == _config.Screens)
             return;
         _config.Screens = screens;
-        ConfigManager.SetUserValue(nameof(Configuration.Screens), (int)screens);
+        SetValue(nameof(Configuration.Screens), (int)screens);
     }
 
     private async void RunNowButton_Click(object sender, RoutedEventArgs e)
     {
         RunNowButton.IsEnabled = false;
-        await Task.Run(StartHotCorner);
+        string exe = ShownHotCornerExe;
+        bool portable = _portableSettings is not null;
+        await Task.Run(() => StartHotCorner(exe, portable));
         RunNowButton.IsEnabled = true;
         UpdateStatus();
     }
@@ -221,7 +338,13 @@ public sealed partial class MainWindow : Window
     private void HoldSwitch_Toggled(object sender, RoutedEventArgs e)
     {
         if (!_loading)
-            ConfigManager.SetUserValue(nameof(Configuration.ExpandHotCornerArea), HoldSwitch.IsOn ? 1 : 0);
+            SetValue(nameof(Configuration.ExpandHotCornerArea), HoldSwitch.IsOn ? 1 : 0);
+    }
+
+    private void RippleSwitch_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (!_loading)
+            SetValue(nameof(Configuration.ShowRipple), RippleSwitch.IsOn ? 1 : 0);
     }
 
     private void RightToLeftSwitch_Toggled(object sender, RoutedEventArgs e)
@@ -229,7 +352,7 @@ public sealed partial class MainWindow : Window
         if (_loading)
             return;
         _config.MirrorForRightToLeft = RightToLeftSwitch.IsOn;
-        ConfigManager.SetUserValue(nameof(Configuration.MirrorForRightToLeft), _config.MirrorForRightToLeft ? 1 : 0);
+        SetValue(nameof(Configuration.MirrorForRightToLeft), _config.MirrorForRightToLeft ? 1 : 0);
         ShowScreenLabels();
     }
 
@@ -265,13 +388,13 @@ public sealed partial class MainWindow : Window
     private void FullscreenSwitch_Toggled(object sender, RoutedEventArgs e)
     {
         if (!_loading)
-            ConfigManager.SetUserValue(nameof(Configuration.DisableWhenFullscreen), FullscreenSwitch.IsOn ? 1 : 0);
+            SetValue(nameof(Configuration.DisableWhenFullscreen), FullscreenSwitch.IsOn ? 1 : 0);
     }
 
     private void MouseDownSwitch_Toggled(object sender, RoutedEventArgs e)
     {
         if (!_loading)
-            ConfigManager.SetUserValue(nameof(Configuration.DisableWhenMouseDown), MouseDownSwitch.IsOn ? 1 : 0);
+            SetValue(nameof(Configuration.DisableWhenMouseDown), MouseDownSwitch.IsOn ? 1 : 0);
     }
 
     private void ThresholdBox_ValueChanged(NumberBox sender, NumberBoxValueChangedEventArgs args)
@@ -292,26 +415,37 @@ public sealed partial class MainWindow : Window
         if (value == _config.PressureThreshold)
             return;
         _config.PressureThreshold = value;
-        ConfigManager.SetUserValue(nameof(Configuration.PressureThreshold), value);
+        SetValue(nameof(Configuration.PressureThreshold), value);
     }
 
     private void ResetButton_Click(object sender, RoutedEventArgs e)
     {
-        ConfigManager.ClearUserValue(nameof(Configuration.Screens));
-        ConfigManager.ClearUserValue(nameof(Configuration.ExpandHotCornerArea));
-        ConfigManager.ClearUserValue(nameof(Configuration.MirrorForRightToLeft));
-        ConfigManager.ClearUserValue(nameof(Configuration.DisableWhenFullscreen));
-        ConfigManager.ClearUserValue(nameof(Configuration.DisableWhenMouseDown));
-        ConfigManager.ClearUserValue(nameof(Configuration.PressureThreshold));
+        ClearValues(nameof(Configuration.Screens), nameof(Configuration.ExpandHotCornerArea), nameof(Configuration.ShowRipple),
+            nameof(Configuration.MirrorForRightToLeft), nameof(Configuration.DisableWhenFullscreen),
+            nameof(Configuration.DisableWhenMouseDown), nameof(Configuration.PressureThreshold));
         LoadSettings();
     }
 
     /// <summary>
     /// Starts the hot corner the way it starts at logon: through its scheduled task, with the user's highest privileges,
-    /// or, where it was installed signed for uiAccess (no task), as the Run key starts it
+    /// or, where it was installed signed for uiAccess (no task), as the Run key starts it. A portable one is just run
     /// </summary>
-    private static void StartHotCorner()
+    private static void StartHotCorner(string exe, bool portable)
     {
+        if (portable)
+        {
+            try
+            {
+                if (File.Exists(exe))
+                    Process.Start(new ProcessStartInfo(exe) { UseShellExecute = true });
+            }
+            catch (Exception)
+            {
+                // The status line keeps saying that it is not running
+            }
+            return;
+        }
+
         try
         {
             var info = new ProcessStartInfo("schtasks.exe", $"/Run /TN \"{HotCornerControl.TASK_NAME}\"")
@@ -333,8 +467,8 @@ public sealed partial class MainWindow : Window
         // elevated window is in the foreground
         try
         {
-            if (File.Exists(HotCornerExe))
-                Process.Start(new ProcessStartInfo(HotCornerExe) { UseShellExecute = true });
+            if (File.Exists(exe))
+                Process.Start(new ProcessStartInfo(exe) { UseShellExecute = true });
         }
         catch (Exception)
         {

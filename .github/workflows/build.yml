@@ -1,4 +1,4 @@
-# Builds both installers on every push and pull request, except a push of a commit that is already released.
+# Builds both installers and the portable zip on every push and pull request, except a push of a commit that is already released.
 # Every push to main, i.e. every merged pull request, is a release: the build is published as a GitHub release. Releases share this workflow with the other
 # builds, so they share one run number, which numbers the builds (see "Versions" in docs/technical.md).
 name: Build
@@ -106,7 +106,9 @@ jobs:
         if: steps.released.outputs.done != 'true'
         with:
           name: WinHotCorner-${{ steps.build.outputs.file-name-version }}
-          path: installer/Output/*.exe
+          path: |
+            installer/Output/*.exe
+            installer/Output/*.zip
           if-no-files-found: error
 
       - name: Publish the release
@@ -114,9 +116,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.build.outputs.file-name-version }}
+          MAJOR: ${{ steps.build.outputs.major }}
+          MINOR: ${{ steps.build.outputs.minor }}
         run: |
           trap { Write-Output "::error::$($_.Exception.Message)"; exit 1 }
           $tag = "v$env:VERSION"
+          # The title without the build number, so releases don't look like they skip versions; the tag keeps it
+          $title = "WinHotCorner $env:MAJOR.$env:MINOR"
 
           # Drafts left by failed attempts or runs
           gh release list --json tagName,isDraft --jq '.[] | select(.isDraft) | .tagName' | ForEach-Object {
@@ -128,12 +134,12 @@ jobs:
           .github\scripts\release-notes.ps1 -Version $env:VERSION -OutFile $notes
 
           # A draft first: nobody sees it, and GitHub creates the tag only when it is published
-          $files = (Get-ChildItem installer\Output\*.exe).FullName
-          gh release create $tag @files --draft --target $env:GITHUB_SHA --title "WinHotCorner $env:VERSION" --notes-file $notes
+          $files = (Get-ChildItem installer\Output\* -Include *.exe, *.zip).FullName
+          gh release create $tag @files --draft --target $env:GITHUB_SHA --title $title --notes-file $notes
           if ($LASTEXITCODE -ne 0) { throw 'Cannot create the draft release' }
 
           $assets = gh release view $tag --json assets --jq '[.assets[] | select(.size > 0)] | length'
-          if ([int]$assets -ne 2) { throw "The draft release has $assets installers instead of 2; it stays a draft" }
+          if ([int]$assets -ne 3) { throw "The draft release has $assets files instead of 3 (two installers and the portable zip); it stays a draft" }
 
           gh release edit $tag --draft=false
           if ($LASTEXITCODE -ne 0) { throw 'Cannot publish the release' }

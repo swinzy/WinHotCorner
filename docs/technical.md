@@ -9,6 +9,7 @@ How WinHotCorner works, how it is configured and started, and how to build it.
 - [Startup and privileges](#startup-and-privileges)
 - [Control panel](#control-panel)
 - [Installers](#installers)
+- [Portable](#portable)
 - [Versions](#versions)
 - [Building](#building)
 - [References](#references)
@@ -20,7 +21,7 @@ How WinHotCorner works, how it is configured and started, and how to build it.
 | `src/WinHotCorner` | The hot corner, `WinHotCorner.exe`. .NET Framework 4.8 (comes with Windows 10 1903 and later), no third-party dependencies. No visible window: a hidden window receives display changes, and the program runs as long as the user is signed in. |
 | `src/ConfigManager` | Shared library: reads and writes the settings, and the names both programs use to talk to each other (`HotCornerControl`). Built for `net48` and `net10.0-windows`. |
 | `src/ControlPanel` | WinHotCorner Control Panel, `WinHotCornerControlPanel.exe`. WinUI 3, unpackaged and self-contained. Optional: the hot corner works without it. |
-| `installer` | Inno Setup scripts for both installers, `build.ps1`, and `uiaccess.ps1`, which signs the hot corner on the user's computer (see [Startup and privileges](#startup-and-privileges)). |
+| `installer` | Inno Setup scripts for both installers, `build.ps1`, `uiaccess.ps1`, which signs the hot corner on the user's computer (see [Startup and privileges](#startup-and-privileges)), and `portable\WinHotCorner.ini`, the settings file of the [portable](#portable) download. |
 
 Despite the old name "service worker", the hot corner is not a Windows service: services run in session 0 and cannot see the user's mouse. It is a normal program in the user's session.
 
@@ -71,7 +72,7 @@ If the shell cannot do it, the hot corner sends Win+Tab with `SendInput` instead
 
 ## Ripple
 
-When Task View opens, the corner plays GNOME's ripple (`Ripple.cs`, a port of GNOME Shell's `js/ui/ripples.js`): three quarter circles grow out of the corner and fade away within about 1.4 s, drawn in the `.ripple-box` style of GNOME's theme (white at 20 %, 52 logical pixels, with a soft edge). It is skipped when Windows animations are turned off (*Animation effects* in Settings).
+When Task View opens, the corner plays GNOME's ripple (`Ripple.cs`, a port of GNOME Shell's `js/ui/ripples.js`): three quarter circles grow out of the corner and fade away within about 1.4 s, drawn in the `.ripple-box` style of GNOME's theme (white at 20 %, 52 logical pixels, with a soft edge). It is skipped when *Ripple animation* is turned off in the control panel (`ShowRipple`), or when Windows animations are turned off (*Animation effects* in Settings).
 
 The ripple is a click-through layered window that never takes the focus or shows up in Task View. Task View covers ordinary topmost windows, though; only a window of a program with `uiAccess` stays above it. So the ripple shows above Task View only when the hot corner was installed signed for `uiAccess` (see [Startup and privileges](#startup-and-privileges)); otherwise it plays under Task View and is mostly hidden by it. The hot corner does not need to know which case it is in.
 
@@ -85,11 +86,14 @@ Settings are DWORD values in `HKEY_CURRENT_USER\Software\WinHotCorner`, written 
 | `PressureThreshold` | 10 to 1000 | 100 | Pressure needed to trigger, in logical pixels |
 | `MirrorForRightToLeft` | 0 or 1 | 1 | In a right-to-left display language, use the top-right corner (as GNOME) instead of the top-left one |
 | `ExpandHotCornerArea` | 0 or 1 | 1 | *Expand hot corner area*: hold the pointer at covered corners with `ClipCursor`, as GNOME's barrier does |
+| `ShowRipple` | 0 or 1 | 1 | *Ripple animation*: play the ripple when the corner triggers |
 | `Screens` | 0 to 3 | 0 | Which screens have a hot corner: 0 the primary screen and every screen whose corner is not covered (GNOME), 1 the primary screen only, 2 only screens whose corner is not covered, 3 all screens |
 | `DisableWhenFullscreen` | 0 or 1 | 1 | |
 | `DisableWhenMouseDown` | 0 or 1 | 1 | |
 
 A missing value means the default. The same values in `HKEY_LOCAL_MACHINE\Software\Policies\WinHotCorner` (Group Policy) override the user's; the control panel shows them greyed out.
+
+In [portable mode](#portable) the user's values come from `WinHotCorner.ini` instead, and HKCU is neither read nor written.
 
 The hot corner usually runs elevated while anything running as the user can write HKCU, so values are read strictly: a value that is not a DWORD in range is ignored, the default is used and the reason is logged. Changes apply immediately: the hot corner watches both keys with `RegNotifyChangeKeyValue` (`RegistryWatcher.cs`), and opens the user's key again if it is deleted.
 
@@ -97,7 +101,7 @@ The alpha versions read `%LOCALAPPDATA%\WinHotCorner\config.xml`; it is no longe
 
 ### Log
 
-Errors are appended to `%LOCALAPPDATA%\WinHotCorner\WinHotCorner.log` (moved to `.old` at 1 MB). All messages also go to the debug output, which [DebugView](https://learn.microsoft.com/sysinternals/downloads/debugview) shows, in Release builds too; Debug builds also have a console window.
+Errors are appended to `%LOCALAPPDATA%\WinHotCorner\WinHotCorner.log` (moved to `.old` at 1 MB); in [portable mode](#portable), to `WinHotCorner.log` next to the program, and where that folder cannot be written there is no log file. All messages also go to the debug output, which [DebugView](https://learn.microsoft.com/sysinternals/downloads/debugview) shows, in Release builds too; Debug builds also have a console window.
 
 ## Startup and privileges
 
@@ -134,7 +138,7 @@ Only one hot corner runs per session (a named mutex).
 - `EXIT_EVENT_NAME`: setting this event asks the hot corner to exit (`RequestExit()`). The hot corner creates it with access for the current user, otherwise its unelevated programs could not open it.
 - `TASK_NAME`: the scheduled task. Turning the hot corner on in the control panel writes `Enabled = 1` and runs the task, so it starts elevated. Without a task (signed for `uiAccess`, or the task is gone) it starts the exe through `ShellExecute`, which grants `uiAccess` to the signed version; the usual version then runs without elevation until the next sign-in. Turning it off just writes `Enabled = 0`. *Run now* next to *Not running* starts it the same way.
 
-The control panel writes only the value that changed, so it never copies a Group Policy value into the user's settings.
+The control panel writes only the value that changed, so it never copies a Group Policy value into the user's settings. When the hot corner running is a [portable](#portable) one, it reads and writes that one's `WinHotCorner.ini` instead.
 
 In a right-to-left display language the control panel is laid out right to left, as Windows' own apps are: WinUI does not do that by itself, so it sets `WS_EX_LAYOUTRTL` on the window (the title bar) and `FlowDirection` on the content; the logo keeps its direction.
 
@@ -144,6 +148,24 @@ Both are Inno Setup 7 scripts in `installer`, published as two downloads:
 
 - `WinHotCorner.iss` builds **`WinHotCorner-HotCornerOnly-<version>-setup.exe`**: the hot corner. Installs to `Program Files\WinHotCorner`, registers the scheduled task, or signs it and adds it to the Run key with the `uiaccess` task (see [Startup and privileges](#startup-and-privileges)), and starts it. Inno Setup remembers the task, so an update keeps the choice. Before installing, upgrading or uninstalling it stops the hot corner in every session and waits until it has exited. Uninstalling keeps the user's settings.
 - `ControlPanel.iss` builds **`WinHotCorner-Full-<version>-setup.exe`**: the control panel, in `Program Files\WinHotCorner\ControlPanel`, with a Start menu shortcut. It contains the hot corner installer and runs it silently when the hot corner is missing or older, so it can install both. It offers the same `uiaccess` task, starting from what the hot corner installer recorded (Inno Setup keeps both the chosen and the declined tasks; without either, from a version before the task, the default applies, as in the hot corner installer), passes the choice on (`/MERGETASKS`), and also runs the hot corner installer when the choice changes. A silent run without tasks on the command line keeps the hot corner's choice. If signing failed, it says so once the hot corner installer has finished. Each product has its own entry in Installed apps and can be uninstalled alone.
+
+## Portable
+
+`WinHotCorner-Portable-<version>.zip` is the hot corner without an installer: the usual `WinHotCorner.exe` (with its `.exe.config` and `ConfigManager.dll`), `WinHotCorner.ini` and the licence. It is self-contained: everything it keeps is in its folder, and it does not depend on anything outside it.
+
+- **Portable mode** is on while `WinHotCorner.ini` is next to the program (`Portable.cs`); the installed program has no such file. It is decided at startup, so deleting the file later only brings back the defaults.
+- **Settings**: read from `WinHotCorner.ini` with the same names and ranges as in the registry, as `name=value` lines (`ConfigManager.LoadFromFile`). Empty lines, `;` and `#` comments and `[section]` lines are skipped; an unknown name or a value that is not a whole number in range is ignored and logged, as in the registry. The file in the zip lists every setting with its default. `SettingsFileWatcher.cs` watches it with a `FileSystemWatcher` and reloads once it has been quiet for 300 ms, as editors save in several steps; while the file cannot be read (still being saved), it tries again for half a second, then keeps the current settings. Group Policy (HKLM) still overrides the file.
+- **Nothing in the registry**: the hot corner does not read the user's settings in HKCU, and does not create its key there to watch it.
+- **Log**: `WinHotCorner.log` next to the program (see [Log](#log)).
+- **Not signed**: `uiAccess` needs an install in a protected folder, so the portable hot corner runs with the rights of whoever starts it. For an administrator that is usually not elevated, so it does not trigger with an elevated window in front, and its ripple plays under Task View.
+- **Run as administrator**: it then triggers with elevated windows in front too, but its ripple still plays under Task View (only `uiAccess` puts it above). The control panel is not elevated, so turning the hot corner on from it starts the portable one without elevation.
+
+> [!IMPORTANT]
+> **Running the portable hot corner as administrator from a folder the user can write is a security risk.** An elevated program loads `ConfigManager.dll` and `WinHotCorner.exe.config` from its own folder, so in a folder the user can write (Downloads, the desktop), any program running as the user could replace them and have its code run elevated; the same goes for a scheduled task that starts it elevated at sign-in. This is why the installed hot corner lives in Program Files. The settings file is safe to leave writable, as only whole numbers in range are taken from it.
+
+- **Control panel**: an installed control panel also works with a running portable hot corner. It finds the program of the hot corner running in its session (`HotCornerControl.GetRunningPath`, `QueryFullProcessImageName`, which also works for an elevated one); when `WinHotCorner.ini` is next to it, the control panel shows the settings of that file and writes each change to its line, leaving the rest of the file, comments included, as it is (`ConfigManager.SetFileValue`). *Reset* writes the defaults out rather than removing the lines. An info bar says where the file is, or that it could not be saved (a read-only folder, for example). A portable hot corner that is not running cannot be found, so a control panel opened then shows the settings in the registry; starting the portable one brings its settings back. The exception: while no hot corner runs, an open control panel stays with the last one it found, so turning a portable hot corner off and on again in it works (turning it on just runs its program).
+- **Startup**: nothing starts it at sign-in; a shortcut in the Startup folder (`shell:startup`) does. `Enabled=0` makes it exit, as in the registry.
+- Only one hot corner runs per session either way, so an installed one and a portable one never both trigger: whichever starts second exits.
 
 ## Translations
 
@@ -172,7 +194,7 @@ For example: after 1.0 is released, 1.1 is developed as `1.1.1.0`, `1.1.2.0`, â€
 - **Build number**: the workflow's run number minus the run number where the line started. The run number counts across the whole repository, so branches, deleted branches, squash merges and rewritten history cannot give two builds the same number. Numbers can be skipped, never reused.
 - **Where a line starts** is kept in annotated tags `metadata/line-<major>.<minor>`, with `baseline-run: <run number>` in their message. They are not code versions; do not delete or move them. The release run tags the next line; the first build after changing the major version tags `<major>.0`.
 - **Revision**: GitHub's API tells whether the same commit was built before in this line; if so, the build keeps that build number and the revision counts the earlier builds, re-runs included. (Two runs of one commit at the very same time could get the same revision.) Pull request runs build a temporary merge commit, which is always new.
-- **Releases** are the exception: always the next build number, even if the commit was built before, and named with three numbers: tag `v1.1.57`, `WinHotCorner-Full-1.1.57-setup.exe`, and `1.1.57` in Installed apps. If a release run fails for reasons other than the code (a download, GitHub itself) it is re-run: the build number stays, the revision counts the attempts (the files say `1.1.57.1`), and the release notes say why the earlier attempts failed. A commit cannot be released twice.
+- **Releases** are the exception: always the next build number, even if the commit was built before, and named with three numbers: tag `v1.1.57`, `WinHotCorner-Full-1.1.57-setup.exe`, and `1.1.57` in Installed apps. The release's title has two, `WinHotCorner 1.1`: the build numbers between releases would look like skipped versions. If a release run fails for reasons other than the code (a download, GitHub itself) it is re-run: the build number stays, the revision counts the attempts (the files say `1.1.57.1`), and the release notes say why the earlier attempts failed. A commit cannot be released twice.
 - **Local builds** are always `<major>.<minor>.0.0`: anyone can build locally, so a local build cannot have a number that only ever grows, and 0 never appears in an official build. A local build is older than any CI build of its line, so installing the *Full* installer of a local build over a CI build leaves the hot corner as it is (uninstall it first, or use *HotCornerOnly*, which always installs).
 
 The four numbers are the file and assembly version (Windows allows at most 65535 for each; the build stops if one is larger). The product version string and Installed apps add where a build comes from:
@@ -193,16 +215,16 @@ On Windows, with the [.NET 10 SDK](https://dotnet.microsoft.com/download) and [I
 installer\build.ps1
 ```
 
-It builds the hot corner, publishes the control panel and writes both installers to `installer\Output`. It needs git, for the version.
+It builds the hot corner, publishes the control panel and writes both installers and the [portable](#portable) zip to `installer\Output`. It needs git, for the version.
 
-GitHub Actions (`.github/workflows/build.yml`) builds both installers on every push and pull request; they can be downloaded from the run. A push of a commit that is already released, such as `devel` fast-forwarded to `main` after a release, builds nothing.
+GitHub Actions (`.github/workflows/build.yml`) builds both installers and the portable zip on every push and pull request; they can be downloaded from the run. A push of a commit that is already released, such as `devel` fast-forwarded to `main` after a release, builds nothing.
 
 ### Releases
 
 `main` only takes pull requests whose build passed, and **every push to `main`, i.e. every merged pull request, is a release**, so `main` is always a released version. The release run:
 
-1. builds both installers as a release (see [Versions](#versions)),
-2. creates a draft release with both installers (nobody sees a draft, and GitHub creates the `v` tag only when it is published), checks that both are there, and publishes it, so a failed run never leaves an empty release,
+1. builds both installers and the portable zip as a release (see [Versions](#versions)),
+2. creates a draft release with all three (nobody sees a draft, and GitHub creates the `v` tag only when it is published), checks that all three are there, and publishes it, so a failed run never leaves an empty release,
 3. tags the start of the next development line.
 
 The release notes are Markdown: the pull request's title (as a `##` heading) and description, then, after a line, why earlier attempts failed if the run was re-run (`Rev. 1:` â€¦), a tip on which installer to download, and a link to the changes since the previous release. Without a pull request, GitHub's generated notes take the place of the title and description.

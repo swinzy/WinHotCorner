@@ -42,6 +42,15 @@
   <data name="Off" xml:space="preserve">
     <value>Desactivado</value>
   </data>
+  <data name="PortableInfo.Title" xml:space="preserve">
+    <value>Versión portátil</value>
+  </data>
+  <data name="PortableSaved" xml:space="preserve">
+    <value>La configuración se guarda en {0}</value>
+  </data>
+  <data name="PortableNotSaved" xml:space="preserve">
+    <value>No se puede guardar la configuración en {0}</value>
+  </data>
   <data name="StatusNotInstalled" xml:space="preserve">
     <value>No instalada</value>
   </data>
@@ -98,6 +107,15 @@
   </data>
   <data name="RightToLeftSwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Reflejar para idiomas de derecha a izquierda</value>
+  </data>
+  <data name="RippleTitle.Text" xml:space="preserve">
+    <value>Animación de onda</value>
+  </data>
+  <data name="RippleDescription.Text" xml:space="preserve">
+    <value>Muestra una onda en la esquina al activarse</value>
+  </data>
+  <data name="RippleSwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Animación de onda</value>
   </data>
   <data name="FullscreenTitle.Text" xml:space="preserve">
     <value>Desactivar en pantalla completa</value>

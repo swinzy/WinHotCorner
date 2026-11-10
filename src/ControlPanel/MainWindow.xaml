@@ -28,6 +28,7 @@
 
                 <InfoBar x:Name="NotInstalledInfo" x:Uid="NotInstalledInfo" Severity="Warning" IsClosable="False" />
                 <InfoBar x:Name="PolicyInfo" x:Uid="PolicyInfo" Severity="Informational" IsClosable="False" />
+                <InfoBar x:Name="PortableInfo" x:Uid="PortableInfo" Severity="Informational" IsClosable="False" />
 
                 <Grid Style="{StaticResource CardStyle}">
                     <Grid.ColumnDefinitions>
@@ -86,6 +87,24 @@
                         <TextBlock x:Name="HoldState" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
                         <ToggleSwitch x:Name="HoldSwitch" x:Uid="HoldSwitch" Style="{StaticResource CardToggleSwitchStyle}"
                                       Toggled="HoldSwitch_Toggled" />
+                    </StackPanel>
+                </Grid>
+
+                <Grid Style="{StaticResource CardStyle}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <FontIcon Glyph="&#xF4A5;" Style="{StaticResource CardIconStyle}" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock x:Uid="RippleTitle" />
+                        <TextBlock x:Uid="RippleDescription" Style="{StaticResource CardDescriptionStyle}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                        <TextBlock x:Name="RippleState" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+                        <ToggleSwitch x:Name="RippleSwitch" x:Uid="RippleSwitch" Style="{StaticResource CardToggleSwitchStyle}"
+                                      Toggled="RippleSwitch_Toggled" />
                     </StackPanel>
                 </Grid>
 

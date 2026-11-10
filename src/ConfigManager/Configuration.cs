@@ -48,6 +48,11 @@
         /// </summary>
         public bool ExpandHotCornerArea { get; set; } = true;
 
+        /// <summary>
+        /// Plays GNOME's ripple at the corner when it triggers (Windows' own Animation effects setting can still turn it off)
+        /// </summary>
+        public bool ShowRipple { get; set; } = true;
+
         public bool DisableWhenFullscreen { get; set; } = true;
         public bool DisableWhenMouseDown { get; set; } = true;
 
@@ -57,7 +62,7 @@
         /// <returns></returns>
         public override string ToString()
         {
-            return $"Enabled: {Enabled}, PressureThreshold: {PressureThreshold}, Screens: {Screens}, MirrorForRightToLeft: {MirrorForRightToLeft}, ExpandHotCornerArea: {ExpandHotCornerArea}, DisableWhenFullscreen: {DisableWhenFullscreen}, DisableWhenMouseDown: {DisableWhenMouseDown}";
+            return $"Enabled: {Enabled}, PressureThreshold: {PressureThreshold}, Screens: {Screens}, MirrorForRightToLeft: {MirrorForRightToLeft}, ExpandHotCornerArea: {ExpandHotCornerArea}, ShowRipple: {ShowRipple}, DisableWhenFullscreen: {DisableWhenFullscreen}, DisableWhenMouseDown: {DisableWhenMouseDown}";
         }
     }
 }

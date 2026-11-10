@@ -42,6 +42,15 @@
   <data name="Off" xml:space="preserve">
     <value>關閉</value>
   </data>
+  <data name="PortableInfo.Title" xml:space="preserve">
+    <value>可攜版</value>
+  </data>
+  <data name="PortableSaved" xml:space="preserve">
+    <value>設定儲存在 {0}</value>
+  </data>
+  <data name="PortableNotSaved" xml:space="preserve">
+    <value>無法將設定儲存到 {0}</value>
+  </data>
   <data name="StatusNotInstalled" xml:space="preserve">
     <value>未安裝</value>
   </data>
@@ -98,6 +107,15 @@
   </data>
   <data name="RightToLeftSwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>由右至左時鏡像</value>
+  </data>
+  <data name="RippleTitle.Text" xml:space="preserve">
+    <value>漣漪動畫</value>
+  </data>
+  <data name="RippleDescription.Text" xml:space="preserve">
+    <value>觸發時在角落播放漣漪</value>
+  </data>
+  <data name="RippleSwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>漣漪動畫</value>
   </data>
   <data name="FullscreenTitle.Text" xml:space="preserve">
     <value>全螢幕時停用</value>
