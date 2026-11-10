@@ -71,7 +71,7 @@ The portable version is self-contained: it doesn't change the registry, and keep
 Edit `WinHotCorner.ini` with Notepad; changes apply when you save. If the control panel is installed, it also shows and changes the settings of a running portable version. To stop it, set `Enabled=0`; to remove it, delete the folder.
 
 > [!IMPORTANT]
-> - It is not signed, as signing is done by the installer: it doesn't trigger while an app running as administrator is in front, and its ripple stays under Task View.
+> - It is not signed, as signing is done by the installer: it doesn't trigger while an app running as administrator is in front, and its ripple stays under Task View. If you need it to trigger there, use an installer instead.
 > - It doesn't change anything outside its folder, so it doesn't start when you sign in. If you want it to, add it to your startup apps the way you prefer.
 > - While it isn't running, the control panel may not know where it is, and shows the settings in the registry instead. Start the portable version, and the control panel works with its settings again.
 
