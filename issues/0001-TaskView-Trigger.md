@@ -3,73 +3,80 @@
 ## Scope
 - Related Issue: #8
 - Affected versions: 1.2-1.3
-- OS: Windows Build 22000 or above (e.g. Windows 11, Windows Server 2025)
-  - Reproduced on Windows 11 26H2 (build 26300). The reporter runs Windows 11 24H2.
-  - Not reproduced on Windows 10 (LTSC 2021, build 19044).
+- OS: Windows 10, Windows 11 and Windows Server 2025
+  - Reproduced on Windows 10 (LTSC 2021, build 19044), Windows 11 26H2 (build 26300) and Windows Server 2025 (build 26100). The reporter runs Windows 11 24H2.
 
 ## Trigger conditions
-- The hot corner runs **unsigned without `uiAccess`**, elevated or not: the portable version, or an unsigned install (started by its scheduled task, elevated).
-- Its **first** call to `WindowSwitcher` comes **more than about 30 seconds after it started**.
+- The hot corner runs **without `uiAccess`**, elevated or not: the portable version, or an unsigned install. Whether a hot corner with `uiAccess` is affected has not been tested under the trigger below yet.
+- **Another program receives keyboard input**, for example the user typing in the app in front.
 
-A hot corner started at logon is almost always first pushed later than that, so in practice it fails from the first push on.
+As users type all the time, the hot corner is in practice almost always in this state.
 
 ## Observed behaviour
-Once app is started, after 30 seconds, Task View triggering will fail. Animation will still play.
+Once another program has received keyboard input, Task View triggering will fail. Animation will still play.
 
 In detail:
 - `WindowSwitcher` returns without an error, so nothing is logged and the Win+Tab fallback is not used. Task View simply does not open; the ripple plays.
-- It stays that way for every later push, until the hot corner is restarted.
-- If the first push comes early, every later one works, also after long breaks and with any window in front.
-- The threshold lies between 27 and 36 seconds after the hot corner started.
-- Whether the user is idle or working (moving the mouse and typing) during the wait does not matter.
+- The state is global and lasts: every later push fails, also from a hot corner started afresh, until one of the following happens:
+  - Task View is opened while the desktop is in front (all windows minimised), as the reporter found. Afterwards it opens from any window again.
+  - The hot corner itself sends input, such as a key tap. Afterwards it opens again without further taps.
+- Once it works again, it keeps working until another program receives keyboard input.
+- It does not depend on how long the hot corner has run: it fails 11 seconds after start as well.
 
 ## Investigation
 
-Each test started the hot corner afresh, waited, then pushed into the corner five times with injected input in a desktop session, and checked whether Task View (`XamlExplorerHostIslandWindow`) came to the front.
+Each test started the hot corner afresh, then pushed into the corner several times with injected input in a desktop session, and checked whether Task View came to the front. To reproduce the trigger, the test script tapped an unassigned key (`0xE8`) into Notepad, which was in front, before pushing.
 
-### First lead: elevated windows (wrong)
-The reporter mentioned that 1.1 failed only with high-priority windows such as Task Manager. Pushing into the corner while an elevated packaged app (the new Notepad, run as administrator) was in front seemed to reproduce the bug, and `AllowSetForegroundWindow(ASFW_ANY)` failed in those calls, so the first fix restored the foreground rights by tapping a key whenever that call failed. That fix worked, but not for the stated reason: those tests only failed because more than 30 seconds had passed since the hot corner started. Without any elevated window, just waiting reproduces the bug, and the foreground rights turned out to be missing in calls that worked as well.
+### Earlier leads (wrong)
+- **Elevated windows:** the reporter mentioned that 1.1 failed only with high-priority windows such as Task Manager. Pushing while an elevated packaged app (the new Notepad, run as administrator) was in front seemed to reproduce the bug, and `AllowSetForegroundWindow(ASFW_ANY)` failed in those calls, so the foreground rights looked like the cause. Without any elevated window the bug occurs as well, and `AllowSetForegroundWindow` fails in calls that work, too.
+- **Time since start:** in a series of tests on Windows 11, the first push worked up to 27 seconds after the hot corner started and failed from 36 seconds on, and the hot corner kept failing until it was restarted. This led to the fix in 1.4, which is limited to build 22000 and later. The trigger above, however, makes it fail 11 seconds after start too, and on Windows 10 and Windows Server 2025 as well, where these tests had never failed. What made those tests fail without any keyboard input is not known.
 
-### Threshold (Windows 11, 1.3.9 portable, unelevated)
+### Matrix: keyboard input from another program, then pushes (1.3.9, ten pushes each)
 
-| First push after start | Result |
+| OS | Hot corner | 11-12 s after start | 66 s after start |
+|---|---|---|---|
+| Windows 11 26H2 | unelevated | 0/10 | 0/10 |
+| Windows 10 LTSC 2021 | unelevated | 0/10 | 0/10 |
+| Windows Server 2025 | elevated (built-in Administrator, so Explorer is elevated too) | 0/10 | 0/10 |
+
+### Matrix: recovering (Windows 11, 1.3.9 unless stated)
+
+| After the trigger | Result |
 |---|---|
-| 9 s, 16 s, 22 s, 27 s | Task View opens |
-| 36 s, 64 s, 66-68 s | 0/5 |
+| Pushes with Notepad in front | 0/3 |
+| Then pushes with all windows minimised | 3/3 |
+| Then pushes with Notepad in front again | 3/3 |
+| A hot corner started afresh afterwards, without the trigger | 10/10 |
+| Test build: no key tap in calls 1-2, a tap in call 3, none from call 4 on | calls 1-2 fail, calls 3-10 open |
+| Test script taps a key into Notepad, or types into it | 0/3 each |
 
-### Matrix (Windows 11, five pushes each)
+### Matrix: the 1.4 fix (Windows 11, time-since-start tests)
 
-| Hot corner | First push within 30 s | First push after 30-60 s |
-|---|---|---|
-| 1.3.9 unelevated (portable or installed) | works | **0/5** |
-| 1.3.9 elevated (unsigned install, scheduled task) | works | **0/5** |
-| 1.3.9 unelevated, user active during the wait | | **0/5** |
-| 1.3.9 signed for `uiAccess` | works | 5/5, idle and active |
-| Fix, unelevated | 5/5 | 5/5 (after 37 s, 64-67 s) |
-| Fix, elevated | | 5/5 (after 64 s) |
-| Fix, pushed early, then again 30 s later | 3/3, then 5/5 | |
-| Experiment: `Shell.Application` created at startup, no key tap | | 0/5 unelevated, 0/5 elevated |
-
-On Windows 10, 1.3.9 worked in every case: first push after 60 seconds, unelevated and elevated, 5/5 each, and with five different elevated (non-packaged) apps in front. There, Task View also opened in calls where `AllowSetForegroundWindow` failed.
-
-How the hot corner was started (scheduled task, directly, from a script), where it was (Program Files or portable), and which other windows were open (Edge, Explorer) made no difference.
+| Hot corner | Result |
+|---|---|
+| Unelevated, first push 37 s and 64-67 s after start | 5/5 each |
+| Elevated, first push 64 s after start | 5/5 |
+| Pushed early, then again 30 s later | 3/3, then 5/5 |
 
 ### Ruled out
-- **Elevated windows or packaged apps in front:** not needed; waiting alone is enough.
-- **Foreground rights:** `AllowSetForegroundWindow(ASFW_ANY)` fails in most calls that work, too.
-- **Creating `Shell.Application` late:** creating it at startup, so that only the first `WindowSwitcher` call comes late, still fails.
-- **The caller being unelevated or late in general:** a separate unelevated PowerShell process that first created `Shell.Application` and called `WindowSwitcher` 40 seconds after it started opened Task View every time. The failure is specific to the hot corner's process.
+- **Elevated windows or packaged apps in front:** not needed.
+- **The hot corner's foreground rights, as `AllowSetForegroundWindow` reports them:** missing in most calls that work, too.
+- **Creating `Shell.Application` late:** creating it at startup does not help.
+- **The time since the hot corner started:** see above.
 
 ## Possible reasons
-Not known. What sets the hot corner apart from the PowerShell caller is its WinForms message loop, the low-level mouse hook and its hidden windows; Windows may also treat a process that has been in the background for a while differently (throttling, for example). None of these has been tested.
+Not known for certain. The pattern fits Windows' rules for changing the foreground window: only the process that received the last input event, or the foreground process, may bring another window to the front. Opening Task View from the desktop (Explorer in front) and a key tap by the hot corner (making it the last input's source) would both satisfy them. That `AllowSetForegroundWindow` fails in calls that work does not fit, though.
 
-## Proposed solutions
+## Implemented fix
 > [!IMPORTANT]
 > This is a workaround only, not a proper fix.
 
-Tap an unassigned key (`0xE8`) with `SendInput` just before each `WindowSwitcher` call. The foreground app receives a key that means nothing. With it, Task View opens in every case above.
+In 1.4, the hot corner taps an unassigned key (`0xE8`) with `SendInput` just before each `WindowSwitcher` call. The foreground app receives a key that means nothing.
 
-The key is only tapped where the bug is known to occur: on build 22000 or above, when the hot corner has no `uiAccess`. On Windows 10, and with `uiAccess`, nothing is sent.
+The key is only tapped on build 22000 or above, when the hot corner has no `uiAccess`; on Windows 10, and with `uiAccess`, nothing is sent. This followed the time-since-start tests, in which only Windows 11 failed.
+
+## Proposed fix
+Tap the key on every Windows version whenever the hot corner has no `uiAccess`, as Windows 10 and Windows Server 2025 are affected too. Before that, test whether a hot corner with `uiAccess` is affected by the keyboard trigger; if it is, tap it there as well.
 
 ## Further actions
 - Find out why the call stops working, and whether the key tap can be replaced by something that doesn't send input.

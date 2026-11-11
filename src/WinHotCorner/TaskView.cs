@@ -149,10 +149,9 @@ namespace WinHotCorner
         /// Taps an unassigned key, which does nothing in the foreground app
         /// </summary>
         /// <remarks>
-        /// On Windows 11, a hot corner without uiAccess whose first WindowSwitcher call comes more than about 30
-        /// seconds after it started gets no Task View from that call or any later one; a key tapped just before each
-        /// call avoids it. Windows 10, and a hot corner with uiAccess, are not affected. See
-        /// issues/0001-TaskView-Trigger.md.
+        /// Once another program has received keyboard input, WindowSwitcher from a hot corner without uiAccess
+        /// succeeds but opens nothing; a key tapped just before each call avoids it. It is only tapped on Windows 11
+        /// for now. See issues/0001-TaskView-Trigger.md.
         /// </remarks>
         private static void TapBeforeShell()
         {
