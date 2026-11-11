@@ -1,6 +1,6 @@
 # Signing WinHotCorner on your computer
 
-Setup offers to **sign WinHotCorner on your computer**, and does so by default. This page explains what that means, why it is needed and why it is safe.
+The standard install **signs WinHotCorner on your computer**. This page explains what that means, why it is needed and why it is safe, and what [installing without signing](#installing-without-signing) leaves out.
 
 ## What you get
 
@@ -8,10 +8,18 @@ Signed, WinHotCorner:
 
 - runs **without administrator rights**, and still works while an app running as administrator (such as Task Manager) is in front;
 - also works in front of such apps on a **standard (non-administrator) account** (not officially tested), which is not possible otherwise;
+- opens **Task View directly**, without pressing a key first;
 - shows its **ripple above Task View**, as on GNOME, instead of under it.
 
-> [!NOTE]
-> If not signed, WinHotCorner runs with administrator rights (on administrator accounts) so that it works in front of other apps running as administrator, and its ripple is mostly hidden by Task View. Everything else works the same.
+## Installing without signing
+
+Setup also offers *Install without signing (limited)*, and the [portable version](../README.md#portable) is never signed. Windows then treats WinHotCorner as an ordinary app, which leaves it with known limitations that can't be cleanly worked around:
+
+- **It presses a key before opening Task View.** Windows lets an ordinary app bring a window to the front only if it has just sent input itself, so WinHotCorner taps a key that means nothing (`0xE8`) each time. The app in front receives it, and so does any program that watches every key press. See [Task View doesn't open due to Windows foreground lock](../issues/0001-TaskView-Trigger.md) for the details.
+- **Administrator rights:** on an administrator account, the installed version runs with administrator rights, so that it works in front of apps running as administrator (such as Task Manager). On a standard account, and in the portable version, it doesn't trigger at all while such an app is in front.
+- **Its ripple is mostly hidden** by Task View.
+
+Because of these limitations, an unsigned WinHotCorner gets **best-effort support only**.
 
 ## Why it needs a signature
 
@@ -51,8 +59,8 @@ The installers and the programs are deliberately not signed with a certificate o
 
 ## Changing your mind
 
-- **To stop signing it**: run Setup again and untick *Sign WinHotCorner on this computer*. Setup removes the certificate and installs the usual, unsigned version.
-- **To sign it later**: run Setup again and tick it.
+- **To stop signing it**: run Setup again and choose *Install without signing (limited)*. Setup removes the certificate and installs the unsigned version.
+- **To sign it later**: run Setup again and choose the standard install.
 - **Uninstalling** WinHotCorner removes the certificate too.
 
 > [!TIP]
@@ -60,10 +68,10 @@ The installers and the programs are deliberately not signed with a certificate o
 
 ## If signing is not possible
 
-Some computers do not allow new trusted certificates, for example because of a company policy, and some security software blocks it. Setup then says that it could not sign WinHotCorner and installs the usual version instead. It does not try again on updates; run Setup again and tick the option if you want to retry.
+Some computers do not allow new trusted certificates, for example because of a company policy, and some security software blocks it. Setup then says that it could not sign WinHotCorner and installs it [without signing](#installing-without-signing) instead. It does not try again on updates; run Setup again and choose the standard install if you want to retry.
 
 > [!TIP]
-> For a silent installation, signing can be turned off on the command line: `/MERGETASKS="!uiaccess"`.
+> For a silent installation, install without signing with `/MERGETASKS="unsigned"` on the command line.
 
 ## Starting at sign-in
 

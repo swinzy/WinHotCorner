@@ -5,7 +5,7 @@
 ; The hot corner is started at every logon in one of two ways (see "Startup and privileges" in docs\technical.md):
 ; - usually by a scheduled task that runs it with the user's highest privileges, so it also works while an elevated
 ;   window is in the foreground (UIPI), without a UAC prompt;
-; - with the uiaccess task: its uiAccess version, signed here with a certificate made on this computer, from the Run
+; - with the uiaccess task (the standard install; the other choice is the unsigned task): its uiAccess version, signed here with a certificate made on this computer, from the Run
 ;   key. Only the chosen version is installed.
 
 #define AppName "WinHotCorner"
@@ -62,7 +62,10 @@ ShowLanguageDialog=no
 #include "Languages.iss"
 
 [Tasks]
-Name: "uiaccess"; Description: "{cm:SignTask}"
+; One of the two, see UIAccessNote.iss. On the command line, choose one by its name: "!uiaccess" alone changes
+; nothing, as a choice cannot be cleared. The code only asks whether uiaccess is chosen
+Name: "uiaccess"; Description: "{cm:SignTask}"; Flags: exclusive
+Name: "unsigned"; Description: "{cm:UnsignedTask}"; Flags: exclusive unchecked
 
 [Files]
 Source: "{#BinDir}\{#AppExe}"; DestDir: "{app}"; Flags: ignoreversion; Tasks: not uiaccess
@@ -93,6 +96,34 @@ var
 procedure InitializeWizard();
 begin
   AddUIAccessNote();
+end;
+
+var
+  ChoiceRestored: Boolean;
+
+// Versions before the choice had only the uiaccess task, and recorded it as not chosen when installed without
+// signing. Setup restores that as the default choice (the standard install), so it is restored here instead, once
+procedure RestoreUnsignedChoice();
+var
+  Tasks: String;
+begin
+  if ChoiceRestored then
+    Exit;
+  ChoiceRestored := True;
+  // The AppId above, without its doubled brace
+  if not TasksOnCommandLine() and RegQueryStringValue(HKLM,
+      'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{1F9F1765-5178-4A09-9EA9-34E77B75CC21}_is1', 'Inno Setup: Deselected Tasks', Tasks)
+      and (Pos(',uiaccess,', ',' + Lowercase(Tasks) + ',') > 0) then
+    WizardSelectTasks('!uiaccess,unsigned');
+end;
+
+procedure CurPageChanged(CurPageID: Integer);
+begin
+  if CurPageID = wpSelectTasks then
+  begin
+    RestoreUnsignedChoice();
+    UIAccessPageShown();
+  end;
 end;
 
 function InitializeSetup(): Boolean;
@@ -181,11 +212,14 @@ end;
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 begin
   Result := '';
+  // Recorded for updates and for the control panel's installer, also when silent
+  RestoreUnsignedChoice();
+  EnsureInstallChoice();
   // Before anything changes. If it fails (a policy may not allow new root certificates, for example), install the
   // usual version instead; the task is then recorded as not chosen, so updates do not try again
   if WizardIsTaskSelected('uiaccess') and not SignHotCorner() then
   begin
-    WizardSelectTasks('!uiaccess');
+    WizardSelectTasks('!uiaccess,unsigned');
     SuppressibleMsgBox(FmtMessage(CustomMessage('SignFailedBefore'), ['{#AppName}']), mbInformation, MB_OK, IDOK);
   end;
   StopHotCorner();

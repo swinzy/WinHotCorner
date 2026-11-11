@@ -68,7 +68,7 @@ GNOME stops the pointer at a covered primary corner with a pointer barrier. Wind
 
 `TaskView.cs` asks the shell to open Task View: `Shell.Application`'s `WindowSwitcher` (`IShellDispatch5`), a documented function that opens Task View on Windows 10 and 11, or closes it when it is open, as pushing into the corner again should. It is as fast as Win+Tab (about 40 ms until Task View is in front, measured on Windows Server 2025), starts no process, and sends no keystroke, so a key the user holds does not matter and UIPI does not stand in the way. The object is created once and kept; if a call fails (Explorer restarted, for example), it is created again once.
 
-On build 22000 and later (Windows 11, Windows Server 2025), a hot corner without `uiAccess` taps the unassigned key `0xE8` with `SendInput` just before each call, so that Task View keeps opening (see [Task View doesn't open, but the ripple plays](../issues/0001-TaskView-Trigger.md)). The foreground app receives a key that means nothing. On Windows 10, and with `uiAccess`, nothing is sent.
+A hot corner without `uiAccess` taps the unassigned key `0xE8` with `SendInput` just before each call, so that Task View keeps opening (see [Task View doesn't open due to Windows foreground lock](../issues/0001-TaskView-Trigger.md)). The foreground app receives a key that means nothing. With `uiAccess`, nothing is sent.
 
 If the shell cannot do it, the hot corner sends Win+Tab with `SendInput` instead, as one uninterrupted sequence, unless Shift, Ctrl, Alt or Win is held (it would mix into a shortcut the user is pressing). If Windows accepts only part of it, the keys that went down are released, with an unassigned key (`0xE8`) tapped first so that a lone Win release does not open the Start menu.
 
@@ -107,9 +107,9 @@ Errors are appended to `%LOCALAPPDATA%\WinHotCorner\WinHotCorner.log` (moved to 
 
 ## Startup and privileges
 
-Windows does not let a normal program send input to, or see the mouse over, an elevated window (UIPI). There are two ways around that, and the installer offers both: it asks before installing whether to sign WinHotCorner on this computer (the `uiaccess` task, on by default). Only the chosen version is installed. Signed is the better choice where it works: the hot corner then runs without elevation; tested on Windows 11 with an administrator account, it still triggers with an elevated Task Manager in front.
+Windows does not let a normal program send input to, or see the mouse over, an elevated window (UIPI). There are two ways around that, and the installer offers both as a choice before installing: the standard install signs WinHotCorner on this computer (the `uiaccess` task, chosen by default), and *Install without signing (limited)* (the `unsigned` task) does not. Only the chosen version is installed. Signed is the supported way: the hot corner then runs without elevation; tested on Windows 11 with an administrator account, it still triggers with an elevated Task Manager in front. Unsigned, it has [known limitations](digital-signature.md#installing-without-signing).
 
-**Usually: elevated, from a scheduled task.** The installer registers a scheduled task, `WinHotCorner`, that starts the hot corner at every user's sign-in:
+**Without signing: elevated, from a scheduled task.** The installer registers a scheduled task, `WinHotCorner`, that starts the hot corner at every user's sign-in:
 
 - It runs as that user with their highest privileges (`BUILTIN\Users`, `HighestAvailable`), so for administrators the hot corner runs elevated, without a UAC prompt, and also works with Task Manager in front. Standard users get it with their normal rights, so for them it does not trigger in front of elevated windows.
 - No time limit, not stopped on battery, normal priority (the task default is below normal), restarted if it fails.
