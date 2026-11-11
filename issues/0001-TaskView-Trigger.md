@@ -2,7 +2,7 @@
 
 ## Scope
 - Related Issue: #8
-- Affected versions: 1.2-1.3
+- Affected versions: 1.2-1.3; 1.4.5 on Windows 10 (see [Implemented fix](#implemented-fix))
 - OS: Windows 10, Windows 11 and Windows Server 2025
   - Reproduced on Windows 10 (LTSC 2021, build 19044), Windows 11 26H2 (build 26300) and Windows Server 2025 (build 26100). The reporter runs Windows 11 24H2.
 - Not a WinHotCorner bug as such: any process without `uiAccess` that calls `WindowSwitcher` behaves the same (see [Minimal reproduction](#minimal-reproduction)).
@@ -18,7 +18,8 @@ Once another program has received keyboard input, Task View triggering will fail
 
 In detail:
 - `WindowSwitcher` returns without an error, so nothing is logged and the Win+Tab fallback is not used. Task View simply does not open; the ripple plays.
-- It does not depend on how long the hot corner has run, on the window in front being elevated, or on the hot corner being elevated.
+- It does not depend on how long the hot corner has run, or on the hot corner being elevated. An elevated window in front is not needed to cause it.
+- Not part of this issue: while an elevated window is in front, a hot corner that is neither elevated nor has `uiAccess` does not trigger at all; not even the ripple plays. Windows (UIPI) keeps such windows apart from lower programs, so this is expected; a hot corner signed for `uiAccess`, or elevated, triggers there too.
 - The state lasts, also for a hot corner started afresh, until one of these happens:
   - **Task View is opened while the desktop is in front** (all windows minimised, or Win+D), as the reporter found. Afterwards it opens from any window again, until the user types in another program again.
   - **The hot corner sends input itself**, such as a key tap. Afterwards it opens every time, **even after the user types again**.
@@ -58,11 +59,11 @@ Both kinds of input gave the same results.
 
 ### Earlier leads (wrong)
 - **Elevated windows:** the reporter mentioned that 1.1 failed only with high-priority windows such as Task Manager. Pushing while an elevated packaged app (the new Notepad, run as administrator) was in front seemed to reproduce the bug, and `AllowSetForegroundWindow(ASFW_ANY)` failed in those calls, so missing foreground rights looked like the cause. The bug occurs without any elevated window, though, and calls also work without those rights (step A above).
-- **Time since start:** in a series of tests on Windows 11 with injected input, the first push worked up to 27 seconds after the hot corner started and failed from 36 seconds on. This led to a first version of the fix, limited to build 22000 and later. With the trigger above, it fails 11 seconds after start too, also on Windows 10 and Windows Server 2025, and once recovered, a hot corner started afresh works 66 seconds after start. What made that series fail without any typing was not found; the test scripts started console windows of their own, which may have taken the foreground.
+- **Time since start:** in a series of tests on Windows 11 with injected input, the first push worked up to 27 seconds after the hot corner started and failed from 36 seconds on. This led to the fix in 1.4.5, which is limited to build 22000 and later. With the trigger above, it fails 11 seconds after start too, also on Windows 10 and Windows Server 2025, and once recovered, a hot corner started afresh works 66 seconds after start. What made that series fail without any typing was not found; the test scripts started console windows of their own, which may have taken the foreground.
 
 ### Hot corner, device input (pushes into the corner)
 
-| Step | Win 11, 1.3.9 | Win 11, first fix | Win 11, 1.3.9 signed (`uiAccess`) | Win 10, 1.3.9 | Win 10, first fix (no tap there) |
+| Step | Win 11, 1.3.9 | Win 11, 1.4.5 | Win 11, 1.3.9 signed (`uiAccess`) | Win 10, 1.3.9 | Win 10, 1.4.5 (no tap there) |
 |---|---|---|---|---|---|
 | No typing yet | 3/3 | 3/3 | 3/3 | 3/3 | 3/3 |
 | After typing into Notepad | **0/3** | 3/3 | 3/3 | **0/3** | **0/3** |
@@ -111,11 +112,12 @@ Not confirmed, but the results fit Windows' rules for changing the foreground wi
 > [!IMPORTANT]
 > This is a workaround only, not a proper fix.
 
-In 1.4, a hot corner without `uiAccess` taps an unassigned key (`0xE8`) with `SendInput` just before each `WindowSwitcher` call, on every Windows version. The foreground app receives a key that means nothing. With `uiAccess`, nothing is sent, as it is not needed there.
+A hot corner without `uiAccess` taps an unassigned key (`0xE8`) with `SendInput` just before each `WindowSwitcher` call. The foreground app receives a key that means nothing. With `uiAccess`, nothing is sent, as it is not needed there.
 
-A first version of the fix tapped the key only on build 22000 and later, following the time-since-start tests, in which only Windows 11 failed. It still failed on Windows 10 (see the table above), so the limit was dropped before the release.
+- **1.4.5 (released):** the key is only tapped on build 22000 and later (Windows 11, Windows Server 2025), following the time-since-start tests, in which only Windows 11 failed. **Windows 10 is still affected** (see the table above).
+- **`devel` (not released yet):** the key is tapped on every Windows version, so Windows 10 is covered too.
 
-| Step, device input | Win 10, 1.4 | Win 11, 1.4 |
+| Step, device input | Win 10, `devel` | Win 11, `devel` |
 |---|---|---|
 | No typing yet | 3/3 | 3/3 |
 | After typing into Notepad | 3/3 | 3/3 |
