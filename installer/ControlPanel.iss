@@ -6,7 +6,7 @@
 ; hot corner is missing or older, so this one installer is enough to get both, and running it after HotCornerOnly
 ; only adds the control panel. Each keeps its own entry in Installed apps and can be uninstalled alone.
 ;
-; It also offers the hot corner installer's uiaccess task, starting from what is installed, and runs the hot corner
+; It also offers the hot corner installer's choice between the uiaccess and unsigned tasks, starting from what is installed, and runs the hot corner
 ; installer when that choice changes too.
 
 #define AppName "WinHotCorner Control Panel"
@@ -63,8 +63,9 @@ UsePreviousTasks=no
 #include "Languages.iss"
 
 [Tasks]
-; Same name and description as in WinHotCorner.iss
-Name: "uiaccess"; Description: "{cm:SignTask}"
+; Same names and descriptions as in WinHotCorner.iss
+Name: "uiaccess"; Description: "{cm:SignTask}"; Flags: exclusive
+Name: "unsigned"; Description: "{cm:UnsignedTask}"; Flags: exclusive unchecked
 
 [Files]
 Source: "{#PublishDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
@@ -143,30 +144,20 @@ begin
   Result := HotCornerTaskIn('Deselected');
 end;
 
-// Tasks given on the command line
-function TasksOnCommandLine(): Boolean;
-var
-  I: Integer;
-begin
-  Result := False;
-  for I := 1 to ParamCount do
-    if (Pos('/TASKS=', Uppercase(ParamStr(I))) = 1) or (Pos('/MERGETASKS=', Uppercase(ParamStr(I))) = 1) then
-      Result := True;
-end;
-
 // Starts the page from what is installed (also called when silent), unless the command line says otherwise
 procedure CurPageChanged(CurPageID: Integer);
 begin
   if (CurPageID = wpSelectTasks) and not TasksPageShown then
   begin
     TasksPageShown := True;
-    if TasksOnCommandLine() then
-      Exit;
-    if HotCornerHasUIAccess() then
-      WizardSelectTasks('uiaccess')
-    else if HotCornerDeclinedUIAccess() then
-      WizardSelectTasks('!uiaccess');
+    if not TasksOnCommandLine() then
+      if HotCornerHasUIAccess() then
+        WizardSelectTasks('uiaccess,!unsigned')
+      else if HotCornerDeclinedUIAccess() then
+        WizardSelectTasks('!uiaccess,unsigned');
   end;
+  if CurPageID = wpSelectTasks then
+    UIAccessPageShown();
 end;
 
 // A silent update without tasks on the command line keeps the hot corner's choice
@@ -209,9 +200,9 @@ begin
   if HotCornerNeedsInstall() or (UIAccess <> HotCornerHasUIAccess()) then
   begin
     if UIAccess then
-      Tasks := 'uiaccess'
+      Tasks := 'uiaccess,!unsigned'
     else
-      Tasks := '!uiaccess';
+      Tasks := '!uiaccess,unsigned';
     ExtractTemporaryFile('{#HotCornerSetup}');
     if not Exec(ExpandConstant('{tmp}\{#HotCornerSetup}'), '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /MERGETASKS="' + Tasks + '"', '',
         SW_HIDE, ewWaitUntilTerminated, ResultCode) or (ResultCode <> 0) then
