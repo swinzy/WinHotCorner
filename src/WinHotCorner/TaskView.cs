@@ -11,7 +11,7 @@ namespace WinHotCorner
     /// <remarks>
     /// Through the shell's own function, Shell.Application's WindowSwitcher (IShellDispatch5), which asks Explorer to
     /// open Task View on Windows 10 and 11, as fast as Win+Tab does and without any keystroke. If that fails, it sends
-    /// Win+Tab instead.
+    /// Win+Tab instead. Where the shell's function is known to stop working, an unassigned key is tapped before it.
     /// </remarks>
     internal static class TaskView
     {
@@ -83,6 +83,12 @@ namespace WinHotCorner
         private static object _shell;
 
         /// <summary>
+        /// Whether to tap an unassigned key before each WindowSwitcher call (see <see cref="TapBeforeShell"/>)
+        /// </summary>
+        private static readonly bool _tapBeforeShell = Environment.OSVersion.Version.Build >= 22000 &&
+            HotCornerService.ReadTokenFlag(HotCornerService.TokenUIAccess) != true;
+
+        /// <summary>
         /// Checks if the user is holding Shift, Ctrl, Alt or Win
         /// </summary>
         private static bool IsModifierDown()
@@ -116,6 +122,8 @@ namespace WinHotCorner
         /// </summary>
         private static bool OpenWithShell()
         {
+            if (_tapBeforeShell)
+                TapBeforeShell();
             for (int attempt = 1; attempt <= 2; attempt++)
             {
                 try
@@ -135,6 +143,20 @@ namespace WinHotCorner
                 }
             }
             return false;
+        }
+
+        /// <summary>
+        /// Taps an unassigned key, which does nothing in the foreground app
+        /// </summary>
+        /// <remarks>
+        /// On Windows 11, a hot corner without uiAccess whose first WindowSwitcher call comes more than about 30
+        /// seconds after it started gets no Task View from that call or any later one; a key tapped just before each
+        /// call avoids it. Windows 10, and a hot corner with uiAccess, are not affected. See
+        /// issues/0001-TaskView-Trigger.md.
+        /// </remarks>
+        private static void TapBeforeShell()
+        {
+            Send(new[] { Key(VK_MASK, false), Key(VK_MASK, true) });
         }
 
         /// <summary>

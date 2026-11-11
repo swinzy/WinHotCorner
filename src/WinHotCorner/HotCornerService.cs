@@ -23,7 +23,7 @@ namespace WinHotCorner
         private static extern bool GetTokenInformation(IntPtr token, int tokenInformationClass, out int information, int length, out int returnLength);
 
         private const int TokenElevation = 20;
-        private const int TokenUIAccess = 26;
+        internal const int TokenUIAccess = 26;
 
         /// <summary>
         /// How often the watchdog checks the mouse hook and the monitor layout, in milliseconds
@@ -118,11 +118,21 @@ namespace WinHotCorner
         /// </summary>
         private static string HasToken(int informationClass)
         {
+            bool? value = ReadTokenFlag(informationClass);
+            return value == null ? "unknown" : value.Value ? "yes" : "no";
+        }
+
+        /// <summary>
+        /// Reads a yes/no property of this process's token
+        /// </summary>
+        /// <returns>null if it cannot be read</returns>
+        internal static bool? ReadTokenFlag(int informationClass)
+        {
             using (WindowsIdentity identity = WindowsIdentity.GetCurrent())
             {
                 if (!GetTokenInformation(identity.Token, informationClass, out int value, sizeof(int), out _))
-                    return "unknown";
-                return value != 0 ? "yes" : "no";
+                    return null;
+                return value != 0;
             }
         }
 
