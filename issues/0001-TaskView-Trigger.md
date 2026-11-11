@@ -1,4 +1,4 @@
-# Task View doesn't open, but the ripple plays
+# Unsigned version workaround: Task View doesn't open due to Windows foreground lock
 
 ## Scope
 - Related Issue: #8
@@ -23,6 +23,7 @@ In detail:
 - The state lasts, also for a hot corner started afresh, until one of these happens:
   - **Task View is opened while the desktop is in front** (all windows minimised, or Win+D), as the reporter found. Afterwards it opens from any window again, until the user types in another program again.
   - **The hot corner sends input itself**, such as a key tap. Afterwards it opens every time, **even after the user types again**.
+  - On Windows 10 only: **no input for longer than the foreground lock timeout** (200 seconds by default). Windows 11 still failed after 210 seconds.
 - Win+D is keyboard input as well, but goes to the shell and does not cause the state. Mouse movement doesn't either; mouse clicks have not been tested.
 
 ## Minimal reproduction
@@ -102,17 +103,81 @@ A hot corner signed for `uiAccess` also opened Task View in every other case tri
 - **Elevated windows or packaged apps in front:** not needed.
 - **The time since the hot corner started:** see above.
 
-## Possible reasons
-Not confirmed, but the results fit Windows' rules for changing the foreground window. Opening Task View brings it to the front, and Explorer seems to do so only if the caller may change the foreground window:
-- A caller without foreground rights may do it only while the foreground is not locked. Typing in an app locks it for that app; a foreground change by the shell (Win+D, Task View) unlocks it.
-- A process that sends input itself gets foreground rights, and here kept them even after the user typed in another program (step G).
-- A process with `uiAccess` is not bound by these rules.
+### Foreground lock
+Tested with the background PowerShell caller from [Minimal reproduction](#minimal-reproduction), on Windows 10 and Windows 11, with device input. Each test started after typing into Notepad had made the call fail.
+
+| Test | Win 10 | Win 11 |
+|---|---|---|
+| Another process with foreground rights (it has just tapped a key) calls `AllowSetForegroundWindow` for the caller | opens | opens |
+| The same process only taps the key, without allowing the caller | does not open | does not open |
+| ...and then the user types into Notepad again | does not open | does not open |
+| `ForegroundLockTimeout` set to 0 (test only, restored afterwards) | opens, also after typing again | opens, also after typing again |
+| No input for 210 seconds, longer than the default `ForegroundLockTimeout` (200 seconds) | opens | does not open |
+| The caller calls `LockSetForegroundWindow(LSFW_UNLOCK)` first | fails with access denied; does not open | same |
+
+Allowing the caller, or turning the foreground lock off, is enough to make the same call work; nothing else about the call changes.
+
+### Keeping the rights
+The same caller tapped `0xE8` once, then did not send input again. After each of the following, the user typed into Notepad and the caller called `WindowSwitcher` twice; "Rights" is what `AllowSetForegroundWindow(ASFW_ANY)` returned before the calls.
+
+| After | Win 10 | Win 11 |
+|---|---|---|
+| Nothing else (the tap only) | 2/2, rights true | 2/2, rights true |
+| The user opens and closes Task View (Win+Tab) | 2/2, true | 2/2, true |
+| The user opens File Explorer (Win+E), types there, and switches back with Alt+Tab | 2/2, true | 2/2, true |
+| The user opens Start and types there | 2/2, true | 2/2, true |
+| The user presses Win+D twice | 2/2, true | 2/2, true |
+| The user clicks on the desktop or taskbar | 2/2, true | 2/2, true |
+| The user presses keys in an elevated window (Registry Editor) | 2/2, true | 2/2, true |
+| 9 minutes, the user typing every 30 seconds (checked after 1, 4 and 9 minutes) | 6/6, true | 6/6, true |
+| **Another process taps a key with `SendInput`** | **0/2, false** | **0/2, false** |
+
+The rights from the caller's own input outlast anything the user does, but not input sent by another process. This fits ReactOS's model of one "input provider", the last process that sent input (see [Documentation and prior art](#documentation-and-prior-art)).
+
+### Opening Task View without sending input
+
+| Way | Win 10 | Win 11 |
+|---|---|---|
+| `ShellExecute` of `shell:::{3080F90E-D7AD-11D9-BD98-0000947B0257}` | does not open | does not open |
+| UI Automation on the taskbar's Task View button (Invoke on Windows 10, Toggle on Windows 11) | opens | the first call opens (after 3.5 seconds), and the caller has foreground rights afterwards; in later calls the button was not found |
+
+The UI Automation way needs the Task View button on the taskbar, which users can hide, and it imitates a click on the taskbar rather than asking the shell for Task View.
+
+## Root cause
+Confirmed by the [foreground lock tests](#foreground-lock): Windows' rules for changing the foreground window. Opening Task View brings it to the front, and Explorer does so only if that is allowed; otherwise `WindowSwitcher` returns without an error and nothing opens.
+- **The foreground lock:** when the user types in an app, the foreground is locked for that app, so that programs in the background cannot steal the focus. A foreground change by the shell (Win+D, Task View) ends the lock. On Windows 10 it also ends after `ForegroundLockTimeout` without input; on Windows 11 it did not.
+- **Without the lock**, Task View opens, even though the caller has no foreground rights (steps A, C and D).
+- **With the lock**, it opens only if the caller has foreground rights, which Explorer then seems to take over. A process gets them when another process with rights allows it (`AllowSetForegroundWindow`), or when it sends input itself (step F). Rights from `AllowSetForegroundWindow` are gone once the user types again; rights from the caller's own input last until another process sends input (see [Keeping the rights](#keeping-the-rights)).
+- **A process with `uiAccess`** is not bound by the lock.
+
+This also explains why 1.1 was not affected: it sent Win+Tab, which is input from the hot corner itself, and which Explorer handles as its own hotkey.
+
+The behaviour is the same on Windows 10 and Windows 11, so it is not a change in a Windows update. Windows 11 only makes it more likely, as the lock does not time out there.
+
+## Documentation and prior art
+What Microsoft documents:
+- [`SetForegroundWindow`](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setforegroundwindow): a process may set the foreground window only if one of a few conditions holds, such as being the foreground process, having been started by it, having received the last input event, or the foreground lock timeout having expired. Even then, Windows may deny it.
+- [`AllowSetForegroundWindow`](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-allowsetforegroundwindow): a process with the right may pass it on to another process; that process loses it the next time the user generates input that is not directed at it. This matches the [foreground lock tests](#foreground-lock).
+- [`CoAllowSetForegroundWindow`](https://learn.microsoft.com/en-us/windows/win32/api/objbase/nf-objbase-coallowsetforegroundwindow): the same for COM servers. The caller must hold the right itself, otherwise it fails with `E_ACCESSDENIED`, so it cannot help a caller that has none.
+- Raymond Chen, [Foreground activation permission is like love: You can't steal it, it has to be given to you](https://devblogs.microsoft.com/oldnewthing/20090220-00/?p=19083): foreground rights come from input and can only be handed on, not taken.
+- [`WindowSwitcher`](https://learn.microsoft.com/en-us/windows/win32/shell/ishelldispatch5-windowswitcher) says nothing about the foreground.
+
+Not documented: that a process gets foreground rights by sending input itself, and how long it keeps them. ReactOS, an independent reimplementation of Windows, records which process sent the last keyboard or mouse input ([`gppiInputProvider`](https://github.com/reactos/reactos/blob/master/win32ss/user/ntuser/keyboard.c)) and lets that process set the foreground window, even while the foreground is locked ([`CanForceFG`](https://github.com/reactos/reactos/blob/master/win32ss/user/ntuser/focus.c) and its callers). This fits what we measured on Windows (see [Keeping the rights](#keeping-the-rights)).
+
+Other programs that need foreground rights from the background send input of their own in the same way:
+- **Chromium** ([`foreground_helper.cc`](https://chromium.googlesource.com/chromium/src/+/main/ui/base/win/foreground_helper.cc)) registers F22 as a hotkey, sends it with `SendInput`, and changes the foreground window when the hotkey arrives.
+- **Signal** ([`windows-dummy-keystroke`](https://github.com/signalapp/windows-dummy-keystroke)) sends a dummy key press so that `AllowSetForegroundWindow` stops failing with access denied.
+- **AutoHotkey** ([`window.cpp`](https://github.com/AutoHotkey/AutoHotkey/blob/alpha/source/window.cpp)) sends an Alt release once per process, noting that this lets all later `SetForegroundWindow` calls succeed.
+
+No documented way to open Task View from a process without foreground rights was found, other than `uiAccess`.
 
 ## Implemented fix
-> [!IMPORTANT]
-> This is a workaround only, not a proper fix.
+A hot corner without `uiAccess` taps an unassigned key (`0xE8`) with `SendInput` just before each `WindowSwitcher` call. Sending input is how a process gets foreground rights (see [Root cause](#root-cause)), and the same approach as in the [programs above](#documentation-and-prior-art). The foreground app receives a key that means nothing. With `uiAccess`, nothing is sent, as it is not needed there.
 
-A hot corner without `uiAccess` taps an unassigned key (`0xE8`) with `SendInput` just before each `WindowSwitcher` call. The foreground app receives a key that means nothing. With `uiAccess`, nothing is sent, as it is not needed there.
+The key is tapped before every call rather than once, or only when the rights seem to be missing:
+- **Rights are only taken when they are needed.** The hot corner takes them when the user pushes into the corner, which is a request to change the foreground window anyway. At other times it leaves them to whichever program has them.
+- **The rights can be lost.** They last through the user's own input, but not through input sent by another process (see [Keeping the rights](#keeping-the-rights)), and programs that send input are common (macro tools, remote control, accessibility tools, browsers).
+- **Checking is not clean either.** The only way to check, `AllowSetForegroundWindow(ASFW_ANY)`, hands the rights to every process when it succeeds. How long the rights last is not documented either, so tapping only when they seem to be missing would rely on undocumented behaviour.
 
 - **1.4.5 (released):** the key is only tapped on build 22000 and later (Windows 11, Windows Server 2025), following the time-since-start tests, in which only Windows 11 failed. **Windows 10 is still affected** (see the table above).
 - **`devel` (not released yet):** the key is tapped on every Windows version, so Windows 10 is covered too.
@@ -126,9 +191,8 @@ A hot corner without `uiAccess` taps an unassigned key (`0xE8`) with `SendInput`
 | After typing into Notepad | 2/2 | 2/2 |
 
 ## Proposed fix
-None at the moment; see [Further actions](#further-actions).
+None beyond the [implemented fix](#implemented-fix), which is to be released for Windows 10 as well. A hot corner signed for `uiAccess` needs no tap.
 
 ## Further actions
-- Find out when a process loses the foreground rights it got from its own input. Tapping once might then be enough; until it is known, the key is tapped before every call.
 - Find out what made the time-since-start series fail without any typing.
-- Look for a way to open Task View that doesn't send input.
+- Low priority: look further for a way to open Task View that doesn't send input. The documented ways have been tried (see [Documentation and prior art](#documentation-and-prior-art)); what is left, such as UI Automation on the taskbar button (see [Opening Task View without sending input](#opening-task-view-without-sending-input)), imitates the user and may not be appropriate even where it works.
