@@ -68,7 +68,7 @@ GNOME stops the pointer at a covered primary corner with a pointer barrier. Wind
 
 `TaskView.cs` asks the shell to open Task View: `Shell.Application`'s `WindowSwitcher` (`IShellDispatch5`), a documented function that opens Task View on Windows 10 and 11, or closes it when it is open, as pushing into the corner again should. It is as fast as Win+Tab (about 40 ms until Task View is in front, measured on Windows Server 2025), starts no process, and sends no keystroke, so a key the user holds does not matter and UIPI does not stand in the way. The object is created once and kept; if a call fails (Explorer restarted, for example), it is created again once.
 
-On build 22000 and later (Windows 11, Windows Server 2025), a hot corner without `uiAccess` taps the unassigned key `0xE8` with `SendInput` just before each call, so that Task View keeps opening (see [Task View doesn't open, but the ripple plays](../issues/0001-TaskView-Trigger.md)). The foreground app receives a key that means nothing. On Windows 10, and with `uiAccess`, nothing is sent.
+A hot corner without `uiAccess` taps the unassigned key `0xE8` with `SendInput` just before each call, so that Task View keeps opening (see [Task View doesn't open, but the ripple plays](../issues/0001-TaskView-Trigger.md)). The foreground app receives a key that means nothing. With `uiAccess`, nothing is sent.
 
 If the shell cannot do it, the hot corner sends Win+Tab with `SendInput` instead, as one uninterrupted sequence, unless Shift, Ctrl, Alt or Win is held (it would mix into a shortcut the user is pressing). If Windows accepts only part of it, the keys that went down are released, with an unassigned key (`0xE8`) tapped first so that a lone Win release does not open the Start menu.
 

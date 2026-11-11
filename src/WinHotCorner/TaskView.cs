@@ -85,7 +85,7 @@ namespace WinHotCorner
         /// <summary>
         /// Whether to tap an unassigned key before each WindowSwitcher call (see <see cref="TapBeforeShell"/>)
         /// </summary>
-        private static readonly bool _tapBeforeShell = Environment.OSVersion.Version.Build >= 22000 &&
+        private static readonly bool _tapBeforeShell =
             HotCornerService.ReadTokenFlag(HotCornerService.TokenUIAccess) != true;
 
         /// <summary>
@@ -149,9 +149,9 @@ namespace WinHotCorner
         /// Taps an unassigned key, which does nothing in the foreground app
         /// </summary>
         /// <remarks>
-        /// Once another program has received keyboard input, WindowSwitcher from a hot corner without uiAccess
-        /// succeeds but opens nothing; a key tapped just before each call avoids it. It is only tapped on Windows 11
-        /// for now. See issues/0001-TaskView-Trigger.md.
+        /// Once the user has typed in another program, WindowSwitcher from a hot corner without uiAccess succeeds
+        /// but opens nothing; a key tapped just before each call avoids it. With uiAccess it is not needed. See
+        /// issues/0001-TaskView-Trigger.md.
         /// </remarks>
         private static void TapBeforeShell()
         {
