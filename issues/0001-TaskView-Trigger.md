@@ -150,7 +150,7 @@ Confirmed by the [foreground lock tests](#foreground-lock): Windows' rules for c
 - **With the lock**, it opens only if the caller has foreground rights, which Explorer then seems to take over. A process gets them when another process with rights allows it (`AllowSetForegroundWindow`), or when it sends input itself (step F). Rights from `AllowSetForegroundWindow` are gone once the user types again; rights from the caller's own input last until another process sends input (see [Keeping the rights](#keeping-the-rights)).
 - **A process with `uiAccess`** is not bound by the lock.
 
-The lock is not a fault to get around: it is a deliberate security mechanism, and a correct one. It protects the program the user is working in, so that background programs cannot take over what the user is doing. Foreground rights are meant for the program in the foreground, or one it hands them to.
+The lock is not a fault to get around: it is a deliberate protection against focus stealing, and a correct one. It protects the program the user is working in, so that background programs cannot take over what the user is doing. Foreground rights are meant for the program in the foreground, or one it hands them to.
 
 The hot corner is a background program that has to respond at any moment and interrupt whatever is in the foreground, which is exactly what the lock is there to stop. Windows has a separate mechanism for programs that legitimately need this, such as accessibility tools: `uiAccess`. That is the right tool for the hot corner, not foreground rights.
 
@@ -180,7 +180,7 @@ The proper fix is to sign the hot corner and enable `uiAccess`, which exempts it
 
 For unsigned installs and the portable version, a hot corner without `uiAccess` taps an unassigned key (`0xE8`) with `SendInput` just before each `WindowSwitcher` call. Sending input is how a process gets foreground rights (see [Root cause](#root-cause)), and the same approach as in the [programs above](#documentation-and-prior-art). The foreground app receives a key that means nothing. With `uiAccess`, nothing is sent, as it is not needed there.
 
-This is a workaround, but it works within the lock rather than around it: receiving the last input event is one of the documented conditions for changing the foreground window, the tap only happens when the user asks for Task View, and nothing in the security checks is turned off or faked. Without signing, it is the cleanest option available.
+This is a workaround, but it works within the lock rather than around it: receiving the last input event is one of the documented conditions for changing the foreground window, the tap only happens when the user asks for Task View, and nothing in these checks is turned off or faked. Without signing, it is the cleanest option available.
 
 The key is tapped before every call rather than once, or only when the rights seem to be missing:
 - **Rights are only taken when they are needed.** The hot corner takes them when the user pushes into the corner, which is a request to change the foreground window anyway. At other times it leaves them to whichever program has them.
