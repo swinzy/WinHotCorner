@@ -2,7 +2,7 @@
 
 ## Scope
 - Related Issue: #8
-- Affected versions: 1.2-1.3; 1.4.5 on Windows 10 (see [Implemented fix](#implemented-fix))
+- Affected versions: 1.2-1.3; 1.4.5 on Windows 10. Fixed in 1.5.7 (see [Implemented fix](#implemented-fix))
 - OS: Windows 10, Windows 11 and Windows Server 2025
   - Reproduced on Windows 10 (LTSC 2021, build 19044), Windows 11 26H2 (build 26300) and Windows Server 2025 (build 26100). The reporter runs Windows 11 24H2.
 - Not a WinHotCorner bug as such: any process without `uiAccess` that calls `WindowSwitcher` behaves the same (see [Minimal reproduction](#minimal-reproduction)).
@@ -150,6 +150,10 @@ Confirmed by the [foreground lock tests](#foreground-lock): Windows' rules for c
 - **With the lock**, it opens only if the caller has foreground rights, which Explorer then seems to take over. A process gets them when another process with rights allows it (`AllowSetForegroundWindow`), or when it sends input itself (step F). Rights from `AllowSetForegroundWindow` are gone once the user types again; rights from the caller's own input last until another process sends input (see [Keeping the rights](#keeping-the-rights)).
 - **A process with `uiAccess`** is not bound by the lock.
 
+The lock is not a fault to get around: it is a deliberate security mechanism, and a correct one. It protects the program the user is working in, so that background programs cannot take over what the user is doing. Foreground rights are meant for the program in the foreground, or one it hands them to.
+
+The hot corner is a background program that has to respond at any moment and interrupt whatever is in the foreground, which is exactly what the lock is there to stop. Windows has a separate mechanism for programs that legitimately need this, such as accessibility tools: `uiAccess`. That is the right tool for the hot corner, not foreground rights.
+
 This also explains why 1.1 was not affected: it sent Win+Tab, which is input from the hot corner itself, and which Explorer handles as its own hotkey.
 
 The behaviour is the same on Windows 10 and Windows 11, so it is not a change in a Windows update. Windows 11 only makes it more likely, as the lock does not time out there.
@@ -172,7 +176,11 @@ Other programs that need foreground rights from the background send input of the
 No documented way to open Task View from a process without foreground rights was found, other than `uiAccess`.
 
 ## Implemented fix
-A hot corner without `uiAccess` taps an unassigned key (`0xE8`) with `SendInput` just before each `WindowSwitcher` call. Sending input is how a process gets foreground rights (see [Root cause](#root-cause)), and the same approach as in the [programs above](#documentation-and-prior-art). The foreground app receives a key that means nothing. With `uiAccess`, nothing is sent, as it is not needed there.
+The proper fix is to sign the hot corner and enable `uiAccess`, which exempts it from the lock: the hot corner is a background program that has to interrupt the foreground, and `uiAccess` is what Windows provides for that (see [Root cause](#root-cause)). The standard installation has done this since 1.1, so it was never affected, and from 1.5 the signed install is the standard choice of the installer.
+
+For unsigned installs and the portable version, a hot corner without `uiAccess` taps an unassigned key (`0xE8`) with `SendInput` just before each `WindowSwitcher` call. Sending input is how a process gets foreground rights (see [Root cause](#root-cause)), and the same approach as in the [programs above](#documentation-and-prior-art). The foreground app receives a key that means nothing. With `uiAccess`, nothing is sent, as it is not needed there.
+
+This is a workaround, but it works within the lock rather than around it: receiving the last input event is one of the documented conditions for changing the foreground window, the tap only happens when the user asks for Task View, and nothing in the security checks is turned off or faked. Without signing, it is the cleanest option available.
 
 The key is tapped before every call rather than once, or only when the rights seem to be missing:
 - **Rights are only taken when they are needed.** The hot corner takes them when the user pushes into the corner, which is a request to change the foreground window anyway. At other times it leaves them to whichever program has them.
@@ -180,9 +188,9 @@ The key is tapped before every call rather than once, or only when the rights se
 - **Checking is not clean either.** The only way to check, `AllowSetForegroundWindow(ASFW_ANY)`, hands the rights to every process when it succeeds. How long the rights last is not documented either, so tapping only when they seem to be missing would rely on undocumented behaviour.
 
 - **1.4.5 (released):** the key is only tapped on build 22000 and later (Windows 11, Windows Server 2025), following the time-since-start tests, in which only Windows 11 failed. **Windows 10 is still affected** (see the table above).
-- **`devel` (not released yet):** the key is tapped on every Windows version, so Windows 10 is covered too.
+- **1.5.7 (released):** the key is tapped on every Windows version, so Windows 10 is covered too.
 
-| Step, device input | Win 10, `devel` | Win 11, `devel` |
+| Step, device input | Win 10, `devel` before 1.5.7 | Win 11, `devel` before 1.5.7 |
 |---|---|---|
 | No typing yet | 3/3 | 3/3 |
 | After typing into Notepad | 3/3 | 3/3 |
@@ -191,8 +199,8 @@ The key is tapped before every call rather than once, or only when the rights se
 | After typing into Notepad | 2/2 | 2/2 |
 
 ## Proposed fix
-None beyond the [implemented fix](#implemented-fix), which is to be released for Windows 10 as well. A hot corner signed for `uiAccess` needs no tap.
+None beyond the [implemented fix](#implemented-fix). The answer to the lock is signing for `uiAccess`, not more ways around the restriction; the key tap stays as the fallback for installs that are not signed.
 
 ## Further actions
 - Find out what made the time-since-start series fail without any typing.
-- Low priority: look further for a way to open Task View that doesn't send input. The documented ways have been tried (see [Documentation and prior art](#documentation-and-prior-art)); what is left, such as UI Automation on the taskbar button (see [Opening Task View without sending input](#opening-task-view-without-sending-input)), imitates the user and may not be appropriate even where it works.
+- Not planned: looking further for a way to open Task View that doesn't send input. The documented ways have been tried (see [Documentation and prior art](#documentation-and-prior-art)); what is left, such as UI Automation on the taskbar button (see [Opening Task View without sending input](#opening-task-view-without-sending-input)), imitates the user and would be one more way around the restriction rather than a fix.
